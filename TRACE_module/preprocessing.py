@@ -15,7 +15,8 @@ import tqdm
 
 
 
-def lissage_signal(smooth_time='20s', smooth_function = "mean",type="From_file",DataFrame=None) -> pd.DataFrame:
+def lissage_signal(smooth_time : str ='20s', smooth_function : str = "mean", DataFrame : pd.DataFrame =None) -> pd.DataFrame:
+
     """
     Smooth time series signal according to "smooth_time" parameter chosen
 
@@ -46,8 +47,10 @@ def lissage_signal(smooth_time='20s', smooth_function = "mean",type="From_file",
     return smoothed_file
 
 
-def format_df_to_concatenation(file,smooth_time="20s") : 
+def format_df_to_concatenation(file : str ,smooth_time : str="20s") -> pd.DataFrame : 
+
     """
+
     Cette fonction prend en argument un CHEMIN de fichier (traité après lissage). 
     Le nom du fichier doit impérativement correspondre au format d'origine des fichiers ( doit être accessible par .split("_")[1] ) 
     La fonction retourne un dataframe, auquel on a ajouté la colonne id_sensor.
@@ -61,14 +64,14 @@ def format_df_to_concatenation(file,smooth_time="20s") :
 
     dataframe=pd.read_parquet(file,engine="pyarrow")
     print("1",dataframe.columns)
-    dataframe=lissage_signal(type="From_DataFrame",DataFrame=dataframe,smooth_time=smooth_time)
+    dataframe=lissage_signal(DataFrame=dataframe,smooth_time=smooth_time)
     dataframe["id_sensor"]=id_sensor 
 
     print(2,dataframe.columns)
     return dataframe
 
 
-def concatenate_df(liste_files) : 
+def concatenate_df(liste_files : list[str] ) -> pd.DataFrame : 
 
 
     """
@@ -84,7 +87,7 @@ def concatenate_df(liste_files) :
 
 
 
-def transform_rssi_to_distance(dataframe, type_evaluation="log") : 
+def transform_rssi_to_distance(dataframe : pd.DataFrame , type_evaluation : str ="log") -> pd.DataFrame : 
 
     """ 
     Cette fonction permet de convertir le signal en une mesure de distance.
@@ -109,53 +112,49 @@ def transform_rssi_to_distance(dataframe, type_evaluation="log") :
 
 
 
-
-
-
-def create_distance_matrix_stack(dataframe,particular_time_step=None) : 
+def create_distance_matrix(dataframe : pd.DataFrame ,particular_time_step : str ,list_id : list[str] ,distance_eval : str = "evaluated_distance") -> np.ndarray : 
     """
+    'glob_sensor_DateTime', 'accelero_id', 'RSSI', 'id_sensor',
+       'evaluated_distance'
     En premier lieu, je stock les matrices de chaque time step dans un dictionnaire (associé à une clé contenant le temps exact). 
     
     
     Particular_time_step : permet de selectionner un unique time step particulier
 
     """
-    import tqdm
-    #dataframe=dataframe.reset_index()
- 
-    dict_result=dict() 
-    time_steps=dataframe["glob_sensor_DateTime"].unique() 
+    subset_dataframe=dataframe[dataframe["glob_sensor_DateTime"]==particular_time_step]
+    #dataframe=dataframe.reset_index()  
+    nb_id = len(list_id) 
+    matrice_df = np.ones((nb_id,nb_id))*np.nan # Liste de nan initialement
+    #print(matrice_df.shape  )
+
+    matrice_df = pd.DataFrame(matrice_df, index = list_id, columns=list_id) # j'ajoute l'indexation des lignes et des colonnes avec les ID des vaches
+
+    for index,row in subset_dataframe.iterrows():
+        vache_capte = row["accelero_id"]
+        vache_captant = row["id_sensor"]
+        matrice_df.loc[vache_capte, vache_captant] = row[distance_eval]
+
+
+    return matrice_df.to_numpy()
+    
+    
     #print(time_steps, "\n ################")
-    if particular_time_step == None : 
-            i=0
-            for step in tqdm.tqdm(time_steps[50000:55000] ): 
-             # print('1',step)
-              
-              if i > 1000 : ### Relou, trop long
-                    break
-              subset_df_pivoted=dataframe[dataframe["glob_sensor_DateTime"]==step][["id_sensor","accelero_id","evaluated_distance"]].pivot(index="id_sensor",columns="accelero_id", values="evaluated_distance") 
-             
-              matrix=subset_df_pivoted.to_numpy() 
-              dict_result[step]={"time_step" : str(step), "matrix" : matrix, "label_0" : subset_df_pivoted.index.tolist(),  "label_1" : subset_df_pivoted.columns.tolist(), }
-              i+=1
-            return dict_result
-    else : 
-         
-               subset_df_pivoted=dataframe[dataframe["glob_sensor_DateTime"]==particular_time_step][["id_sensor","accelero_id","evaluated_distance"]].pivot(index="id_sensor",columns="accelero_id", values="evaluated_distance") 
-               matrix=subset_df_pivoted.to_numpy() 
-               dict_result[particular_time_step]={"time_step" : particular_time_step, "matrix" : matrix, "label_0" : subset_df_pivoted.index.tolist(),  "label_1" : subset_df_pivoted.columns.tolist(), }
-              
-               return dict_result
+    
+    
+def create_matrix_stack(dataframe : pd.DataFrame,list_id : list[str], distance_eval :str ="evaluated_distance") -> tuple[np.ndarray, list[str]]: 
 
-
- 
-
-
-
-
-
-   
-
+    list_timesteps = pd.unique(dataframe["glob_sensor_DateTime"])
+    stack_matrix = np.zeros((len(list_timesteps),len(list_id),len(list_id)))
+    for ind,t in tqdm.tqdm(enumerate(list_timesteps)) : 
+        mat = create_distance_matrix(dataframe,t,list_id,distance_eval)
+        stack_matrix[ind,:,:]= mat
+    return stack_matrix,list_timesteps
 
 
     
+    
+    
+    
+
+
