@@ -46,3 +46,35 @@ def visualisation_distance_matrice(
     plt.yticks(rotation=45, fontsize=12)
     plt.tight_layout()
     plt.show()
+
+def plot_accelero_ranking(df: pd.DataFrame):
+
+    """
+    Fonction permettant d'afficher sous la forme d'un histogramme du classement des individus proches par animal
+
+    **Args :
+        df (Dataframe) : Dataframe contenant au moins les attributs "id_sensor" et "accelero_id" et un attribut de comptage (par exemple "count")
+
+    **Returns : Histogramme
+    """
+
+    # Créer un graphique en barres groupées
+    plt.figure(figsize=(10, 6))
+    
+    # Tracer les barres avec Seaborn
+    sns.barplot(
+        data=df,
+        x='id_sensor',
+        y='count',
+        hue='accelero_id',  # Couleurs différentes pour chaque accelero_id
+        dodge=True  # Pour séparer les barres par groupe
+    )
+    
+    # Ajouter des labels et un titre
+    plt.xlabel('ID Sensor')
+    plt.ylabel('Nombre d\'occurrences')
+    plt.title('Classement des individus proches par animal')
+    plt.legend(title='Accelero ID')
+    
+    # Afficher le graphique
+    plt.show()
