@@ -158,7 +158,8 @@ def create_matrix_stack(
 
 def rank_accelero_by_sensor(
         df: pd.DataFrame, 
-        limit_rank: int = 10
+        limit_rank: int = 10,
+        threshold: int = -40
         )-> pd.DataFrame:
     """
     Fonction permettant de faire un classement des binômes de vaches qui passent le plus de temps proches (lorsqu'il y a détection des capteurs RSSI)
@@ -166,12 +167,14 @@ def rank_accelero_by_sensor(
     **Args :
         df (Dataframe) : Dataframe contenant au moins les attributs "id_sensor" et "accelero_id" et lissé selon un pas de temps
         limit_rank (int) : Paramètre permettant de limiter les rangs à afficher. Si on souhaite avoir le top 3 ou top 10 par exemple
+        threshold (int) : Seuil de distance RSSI choisis
 
     **Returns : 
         pd.DataFrame : Dataframe avec les attributs "id_sensor" et "accelero_id" ainsi que la colonne de comptage "count"
     """
     # Filtrer les lignes où "id_sensor" et "accelero_id" sont différents
     filtered_df = df[df['id_sensor'] != df['accelero_id']]
+    filtered_df = filtered_df[filtered_df['RSSI'] >= threshold]
     
     # Compter les occurrences de "accelero_id" pour chaque "id_sensor"
     counts = (filtered_df
