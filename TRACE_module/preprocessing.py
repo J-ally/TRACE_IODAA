@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import tqdm
 
 
+
 def lissage_signal(
     smooth_time: str = "20s",
     smooth_function: str = "mean",
@@ -113,8 +114,7 @@ def create_distance_matrix(
     distance_eval: str = "evaluated_distance",
 ) -> np.ndarray:
     """
-    'glob_sensor_DateTime', 'accelero_id', 'RSSI', 'id_sensor',
-       'evaluated_distance'
+    'glob_sensor_DateTime', 'accelero_id', 'RSSI', 'id_sensor', 'evaluated_distance'
     En premier lieu, je stock les matrices de chaque time step dans un dictionnaire (associé à une clé contenant le temps exact).
 
 
@@ -168,15 +168,9 @@ def transform_adjacence_matrix(
     Parameters
     ----------
     matrix : np.ndarray
-       
     
     threshold : Float
         Doit correspondre à l'unité de valeur de la matrice prise en argument (distance, signal RSSI,..)
-            
-     : TYPE
-   
-
-    Return 
     
     -------
     
@@ -224,8 +218,29 @@ def symetrisation_matrice(
 
 
 
+def create_stack_sym_adj(
+    dataframe: pd.DataFrame,
+    list_id: list[str],
+    distance_eval: str = "RSSI",
+    threshold: float = -65
+    )-> tuple[np.ndarray, list[str]]:
+    """Cherche à créer un stack de matrices d'adjacence symétriques à partir du dataframe avec les bons timesteps 
 
+    Args:
+        dataframe (pd.DataFrame): le dataframe des données agglomérées
+        threshold (float): le threshold RSSI à partir duquel on considére que il y a intercation;
+        les valeurs plus grande(on est avec des RSSI négatifs) seront des 1 dan sla matrices d'adjacences.
+    Output: tuple avec le dataframe (index temps, dim1, dim2) et la liste des time steps list_timesteps
+    """
+    list_timesteps = pd.unique(dataframe["glob_sensor_DateTime"])
+    stack_sym_adj_matrix = np.zeros((len(list_timesteps), len(list_id), len(list_id)))
+    for ind, t in tqdm.tqdm(enumerate(list_timesteps)):
+        mat = create_distance_matrix(dataframe, t, list_id, distance_eval)
+        mat=symetrisation_matrice(mat,"RSSI")
+        mat=transform_adjacence_matrix(mat,threshold)
+        stack_sym_adj_matrix[ind, :, :] = mat
 
+    return stack_sym_adj_matrix, list_timesteps
 
 
 def rank_accelero_by_sensor(
