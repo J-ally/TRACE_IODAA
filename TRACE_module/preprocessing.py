@@ -153,4 +153,84 @@ def create_matrix_stack(
     for ind, t in tqdm.tqdm(enumerate(list_timesteps)):
         mat = create_distance_matrix(dataframe, t, list_id, distance_eval)
         stack_matrix[ind, :, :] = mat
+<<<<<<< HEAD
     return stack_matrix, list_timesteps
+=======
+    return stack_matrix, list_timesteps
+
+
+def transform_adjacence_matrix(
+        matrice : np.ndarray, 
+        threshold : float, 
+        
+        ) -> np.ndarray : 
+    """
+    
+    
+
+    Parameters
+    ----------
+    matrix : np.ndarray
+       
+    
+    threshold : Float
+        Doit correspondre à l'unité de valeur de la matrice prise en argument (distance, signal RSSI,..)
+            
+     : TYPE
+   
+
+    Return 
+    
+    -------
+    
+    Retourne une matrice d'adjacence 
+    
+    """
+
+    return matrice.where(matrice>threshold, 1,0)
+
+    
+
+
+
+
+
+
+
+def rank_accelero_by_sensor(
+        df: pd.DataFrame, 
+        limit_rank: int = 10,
+        threshold: int = -40
+        )-> pd.DataFrame:
+    """
+    Fonction permettant de faire un classement des binômes de vaches qui passent le plus de temps proches (lorsqu'il y a détection des capteurs RSSI)
+
+    **Args :
+        df (Dataframe) : Dataframe contenant au moins les attributs "id_sensor" et "accelero_id" et lissé selon un pas de temps
+        limit_rank (int) : Paramètre permettant de limiter les rangs à afficher. Si on souhaite avoir le top 3 ou top 10 par exemple
+        threshold (int) : Seuil de distance RSSI choisis
+
+    **Returns : 
+        pd.DataFrame : Dataframe avec les attributs "id_sensor" et "accelero_id" ainsi que la colonne de comptage "count"
+    """
+    # Filtrer les lignes où "id_sensor" et "accelero_id" sont différents
+    filtered_df = df[df['id_sensor'] != df['accelero_id']]
+    filtered_df = filtered_df[filtered_df['RSSI'] >= threshold]
+    
+    # Compter les occurrences de "accelero_id" pour chaque "id_sensor"
+    counts = (filtered_df
+              .groupby(['id_sensor', 'accelero_id'])
+              .size()  # Compte les occurrences
+              .reset_index(name='count')  # Renomme la colonne de comptage
+              )
+
+    # Trier les résultats pour chaque "id_sensor" par ordre décroissant de "count"
+    sorted_counts = counts.sort_values(by=['id_sensor', 'count'], ascending=[True, False])
+    
+    # Limiter le nombre de "accelero_id" par "id_sensor"
+    top_counts = sorted_counts.groupby('id_sensor').head(limit_rank)
+    
+    return top_counts
+
+
+>>>>>>> 7112f20 (ajout dune fonction pour créer matrice d adjacence)
