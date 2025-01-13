@@ -153,11 +153,8 @@ def create_matrix_stack(
     for ind, t in tqdm.tqdm(enumerate(list_timesteps)):
         mat = create_distance_matrix(dataframe, t, list_id, distance_eval)
         stack_matrix[ind, :, :] = mat
-<<<<<<< HEAD
-    return stack_matrix, list_timesteps
-=======
-    return stack_matrix, list_timesteps
 
+    return stack_matrix, list_timesteps
 
 def transform_adjacence_matrix(
         matrice : np.ndarray, 
@@ -190,6 +187,40 @@ def transform_adjacence_matrix(
     return matrice.where(matrice>threshold, 1,0)
 
     
+
+def symetrisation_matrice(
+        matrice : np.ndarray, 
+        type_ : str = "RSSI"
+        
+        ) -> np.ndarray : 
+    """
+    
+
+    Parameters
+    ----------
+    matrice : np.ndarray
+        DESCRIPTION.
+        
+        
+    type_ : str, optional. Type de la matrice prise en argument. 
+    The default is "RSSI". Changer pour un autre type
+
+    Returns
+    -------
+    Retourne une matrice symétrisée, du même type que celle prise en argument 
+    
+    """
+    
+    matrice_res=np.zeros(matrice.shape)
+    
+    for i in range(matrice.shape[0]) :
+        
+         if type_ in ["RSSI","evaluated_distance"]: 
+             a= np.fmin(matrice[i,:],matrice[:,i])
+             matrice_res[i,:], matrice_res[:,i] = a,a 
+         
+    return matrice_res
+
 
 
 
@@ -233,4 +264,4 @@ def rank_accelero_by_sensor(
     return top_counts
 
 
->>>>>>> 7112f20 (ajout dune fonction pour créer matrice d adjacence)
+
