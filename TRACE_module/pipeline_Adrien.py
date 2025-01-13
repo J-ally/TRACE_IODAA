@@ -42,10 +42,10 @@ list_id=list(pd.unique(data["accelero_id"]))
 # np.save(os.path.join(folder_savings,"list_timesteps.npy"),list_timesteps)
 
 
-# stack_adj_symetrique,time_steps=pp.create_stack_sym_adj(data,list_id,distance_eval="RSSI")
+stack_adj_symetrique,time_steps=pp.create_stack_sym_adj(data,list_id,distance_eval="RSSI")
 
-# np.save(os.path.join(folder_savings,"matrice_test_adj_sym.npy"),stack_adj_symetrique)
-# np.save(os.path.join(folder_savings,"list_timesteps_test_adj.npy"),time_steps)
+np.save(os.path.join(folder_savings,"matrice_test_adj_sym.npy"),stack_adj_symetrique)
+np.save(os.path.join(folder_savings,"list_timesteps_test_adj.npy"),time_steps)
 
 stack_adj_symetrique=np.load(os.path.join(folder_savings,"matrice_test_adj_sym.npy"))
 time_steps=np.load(os.path.join(folder_savings,"list_timesteps_test_adj.npy"))
