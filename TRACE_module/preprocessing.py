@@ -71,7 +71,7 @@ def format_df_to_concatenation(file: str, smooth_time: str = "20s") -> pd.DataFr
     return dataframe
 
 
-def concatenate_df(liste_files: list[str]) -> pd.DataFrame:
+def concatenate_df(liste_files: list[str], smooth_time: str = "20s") -> pd.DataFrame:
     """
     Cette fonction prend en argument une liste de chemin fichiers parquets, les concatène, et retourne un DataFrame entier
     Il serait bon de vérifier en ammont que la liste ne contient que les fichiers souhaités ?
@@ -79,7 +79,7 @@ def concatenate_df(liste_files: list[str]) -> pd.DataFrame:
 
     concatenated_df = pd.DataFrame()
     for file in liste_files:
-        concatenated_df = pd.concat([concatenated_df, format_df_to_concatenation(file)])
+        concatenated_df = pd.concat([concatenated_df, format_df_to_concatenation(file, smooth_time= smooth_time)])
 
     return concatenated_df
 
