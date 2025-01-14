@@ -8,7 +8,6 @@ from utils import *
 type Individu = str  # Accelero_id de la vache
 type TimeStep = datetime      # Timestep en seconde ?
 type Sequence = list[Interaction]  # Séquence d'intéraction
-## type Arc = tuple[Individu, Individu]  # Arc qui compose les motifs
 type ListeMotif = list[Motif]  # Liste de motifs
 
 
@@ -24,7 +23,7 @@ class Arc :
             sep = "->"
         else :
             sep = "--"
-        return(f"{self._ind1} {sep} {self._ind2}, Oriented = {self._oriented}")
+        return(f"{self._ind1} {sep} {self._ind2}")
     
     def __eq__(self, obj) : 
         if self._oriented :
@@ -94,24 +93,32 @@ class Interaction :
 
     
 class Motif:
-    def __init__(self,*args : Arc):
+    def __init__(self,*args : Arc, oriented : bool = True):
         """ Objet Motif : séquence d'arc ordonnés)
         """
+        self._oriented = oriented
         self.list_arc = list(args)
+        for arc in self.list_arc : arc._oriented = self._oriented
+
         self.dict_arc = dict(zip([i for i in range(len(self.list_arc))], self.list_arc))
+        
 
     def __repr__(self):
         to_print = ""
         for key,arc in self.dict_arc.items() : 
-            to_print += f"{key} : {arc[0]} -> {arc[1]} \n "
-        to_print = f"Motif({to_print})"
+            to_print += f"{key} : {arc} \n "
+        to_print = f"Motif({to_print}, Oriented : {self._oriented})"
         return to_print
     
     def __getitem__(self,key):
         return self.dict_arc[key]
     
     def __eq__(self,motif):
-        return (self.dict_arc == motif.dict_arc)
+        if self._oriented :
+            result = (self.dict_arc == motif.dict_arc)
+        else : 
+            result = (set(self.list_arc) == set(motif.list_arc))
+        return result
     
     def __hash__(self):
         return hash(tuple(self.list_arc))
@@ -129,7 +136,7 @@ class Motif:
             Motif : Motif avec l'arc ajouté au début 
         """
         list_arc = self.list_arc + [arc]
-        return Motif(*list_arc)
+        return Motif(*list_arc, oriented= self._oriented)
     
     def add_suffix(self, arc : Arc):
         """Ajout d'un arc en début de séquence de motif
@@ -141,7 +148,7 @@ class Motif:
             Motif : Motif avec l'arc ajouté au début 
         """
         list_arc = [arc] + self.list_arc
-        return Motif(*list_arc)
+        return Motif(*list_arc, oriented= self._oriented)
 
     
     def graph(self):
@@ -157,9 +164,12 @@ class Motif:
             list[Motif] : liste des sous motifs (ne contient pas le motif nul, et contient le motif lui même)
         """
         list_sub_motif = [] #Liste qui va contenir les sous motifs 
-        sub_seq_keys = subset_int_consecutif(list(self.dict_arc.keys())) # On récupère les clées de tous les sous motifs
+        if self._oriented : 
+            sub_seq_keys = subset_int_consecutif(list(self.dict_arc.keys())) # On récupère les clées de tous les sous motifs
+        else :
+            sub_seq_keys = subset_int(list(self.dict_arc.keys()))
         for list_keys in sub_seq_keys : 
-            list_sub_motif.append(Motif(*[self.dict_arc[key] for key in list_keys])) # Instanciation des motifs à partir des arc
+            list_sub_motif.append(Motif(*[self.dict_arc[key] for key in list_keys], oriented= self._oriented)) # Instanciation des motifs à partir des arc
         return list_sub_motif
         
         
@@ -201,7 +211,7 @@ def count_instance_motif(sequence: Sequence, motif: Motif, delta: int) -> int:
     for end in tqdm(range(len(sequence))):
         while sequence[start].ts + delta < sequence[end].ts :
             # Decrement Counts 
-            counts[Motif(sequence[start].inds)] -= 1
+            counts[Motif(sequence[start].inds, oriented= motif._oriented)] -= 1
             for suffix in counts.keys() :
                 # Si le motif est trop grand
                 if len(suffix) >= l_motif - 1 : 
@@ -220,7 +230,7 @@ def count_instance_motif(sequence: Sequence, motif: Motif, delta: int) -> int:
                 concat = prefix + sequence[end].inds
                 if concat not in counts.keys() : continue #Motif n'est pas dans les sous motifs que l'on recherche
                 else : counts[concat] += counts[prefix]
-        counts[Motif(sequence[end].inds)] += 1
+        counts[Motif(sequence[end].inds, oriented= motif._oriented)] += 1
         
         # Ajout des données de counts dans le dictionnaire
         for motif in submotifs : 
