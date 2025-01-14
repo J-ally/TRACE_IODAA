@@ -8,8 +8,45 @@ from utils import *
 type Individu = str  # Accelero_id de la vache
 type TimeStep = datetime      # Timestep en seconde ?
 type Sequence = list[Interaction]  # Séquence d'intéraction
-type Arc = tuple[Individu, Individu]  # Arc qui compose les motifs
+## type Arc = tuple[Individu, Individu]  # Arc qui compose les motifs
 type ListeMotif = list[Motif]  # Liste de motifs
+
+
+class Arc :
+    def __init__(self, ind1 : Individu, ind2 : Individu, oriented : bool = True):
+
+        self._ind1 = ind1 
+        self._ind2 = ind2 
+        self._oriented = oriented
+    
+    def __repr__(self):
+        if self._oriented :
+            sep = "->"
+        else :
+            sep = "--"
+        return(f"{self._ind1} {sep} {self._ind2}, Oriented = {self._oriented}")
+    
+    def __eq__(self, obj) : 
+        if self._oriented :
+            result = ((self._ind1 == obj._ind1) & (self._ind2 == obj._ind2))
+        else :
+            result = (((self._ind1 == obj._ind1) & (self._ind2 == obj._ind2)) 
+                      | ((self._ind1 == obj._ind2) & (self._ind2 == obj._ind1)))
+        return result
+
+    @property
+    def inds(self):
+        return (self._ind1, self._ind2)
+
+    @property
+    def ind1(self): 
+        return self._ind1
+
+    @property
+    def ind2(self): 
+        return self._ind2
+    
+    
 
 
 class Interaction :
