@@ -1,21 +1,12 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Jan 13 15:51:20 2025
-
-@author: bouchet
-"""
-
-import preprocessing as pp
 import visualisation as vi 
 import motif_2_adrien as motif2
 import numpy as np
 import os 
 import pandas as pd
+import preprocessing as pp
 
 
-
-folder="/Users/bouchet/Documents/Cours/Cours /AgroParisTech /3A/IODAA/PFR/Data_rssi_glob_sensor_time"
+folder="../data/Data_rssi_glob_sensor_time"
 
 ##############
 #Préparation
@@ -26,7 +17,7 @@ for f in os.listdir(folder):
     if f.endswith(".parquet") : 
         list_files.append(os.path.join(folder,f))
         
-folder_savings="/Users/bouchet/Documents/Cours/Cours /AgroParisTech /3A/IODAA/PFR/savings"
+folder_savings="../savings"
 if not  os.path.isdir(folder_savings) : 
     os.makedirs(folder_savings)
     
