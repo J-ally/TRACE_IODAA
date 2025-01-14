@@ -2,3 +2,5 @@ data/
 Intro/
 Bibliographie/
 TRACE_module/__pycache__/
+PFR.yml
+TRACE_module/test_preprocessing.py
