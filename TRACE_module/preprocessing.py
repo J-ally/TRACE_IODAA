@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import tqdm
 
 
+
 def lissage_signal(
     smooth_time: str = "20s",
     smooth_function: str = "mean",
@@ -70,7 +71,7 @@ def format_df_to_concatenation(file: str, smooth_time: str = "20s") -> pd.DataFr
     return dataframe
 
 
-def concatenate_df(liste_files: list[str]) -> pd.DataFrame:
+def concatenate_df(liste_files: list[str], smooth_time: str = "20s") -> pd.DataFrame:
     """
     Cette fonction prend en argument une liste de chemin fichiers parquets, les concatène, et retourne un DataFrame entier
     Il serait bon de vérifier en ammont que la liste ne contient que les fichiers souhaités ?
@@ -78,7 +79,7 @@ def concatenate_df(liste_files: list[str]) -> pd.DataFrame:
 
     concatenated_df = pd.DataFrame()
     for file in liste_files:
-        concatenated_df = pd.concat([concatenated_df, format_df_to_concatenation(file)])
+        concatenated_df = pd.concat([concatenated_df, format_df_to_concatenation(file, smooth_time= smooth_time)])
 
     return concatenated_df
 
@@ -113,8 +114,7 @@ def create_distance_matrix(
     distance_eval: str = "evaluated_distance",
 ) -> np.ndarray:
     """
-    'glob_sensor_DateTime', 'accelero_id', 'RSSI', 'id_sensor',
-       'evaluated_distance'
+    'glob_sensor_DateTime', 'accelero_id', 'RSSI', 'id_sensor', 'evaluated_distance'
     En premier lieu, je stock les matrices de chaque time step dans un dictionnaire (associé à une clé contenant le temps exact).
 
 
@@ -153,4 +153,130 @@ def create_matrix_stack(
     for ind, t in tqdm.tqdm(enumerate(list_timesteps)):
         mat = create_distance_matrix(dataframe, t, list_id, distance_eval)
         stack_matrix[ind, :, :] = mat
+
     return stack_matrix, list_timesteps
+
+def transform_adjacence_matrix(
+        matrice : np.ndarray, 
+        threshold : float, 
+        
+        ) -> np.ndarray : 
+    """
+    
+    
+
+    Parameters
+    ----------
+    matrix : np.ndarray
+    
+    threshold : Float
+        Doit correspondre à l'unité de valeur de la matrice prise en argument (distance, signal RSSI,..)
+    
+    -------
+    
+    Retourne une matrice d'adjacence 
+    
+    """
+
+    return np.where(matrice>threshold, 1,0)
+
+    
+
+def symetrisation_matrice(
+        matrice : np.ndarray, 
+        type_ : str = "RSSI"
+        
+        ) -> np.ndarray : 
+    """
+    
+
+    Parameters
+    ----------
+    matrice : np.ndarray
+        DESCRIPTION.
+        
+        
+    type_ : str, optional. Type de la matrice prise en argument. 
+    The default is "RSSI". Changer pour un autre type
+
+    Returns
+    -------
+    Retourne une matrice symétrisée, du même type que celle prise en argument 
+    
+    """
+    
+    matrice_res=np.zeros(matrice.shape)
+    
+    for i in range(matrice.shape[0]) :
+        
+         if type_ in ["RSSI","evaluated_distance"]: 
+             a= np.fmin(matrice[i,:],matrice[:,i])
+             matrice_res[i,:], matrice_res[:,i] = a,a 
+         
+    return matrice_res
+
+
+
+
+def create_stack_sym_adj(
+    dataframe: pd.DataFrame,
+    list_id: list[str],
+    distance_eval: str = "RSSI",
+    threshold: float = -65
+    )-> tuple[np.ndarray, list[str]]:
+    """Cherche à créer un stack de matrices d'adjacence symétriques à partir du dataframe avec les bons timesteps 
+
+    Args:
+        dataframe (pd.DataFrame): le dataframe des données agglomérées
+        threshold (float): le threshold RSSI à partir duquel on considére que il y a intercation;
+        les valeurs plus grande(on est avec des RSSI négatifs) seront des 1 dan sla matrices d'adjacences.
+    Output: tuple avec le dataframe (index temps, dim1, dim2) et la liste des time steps list_timesteps
+    """
+    list_timesteps = pd.unique(dataframe["glob_sensor_DateTime"])
+    stack_sym_adj_matrix = np.zeros((len(list_timesteps), len(list_id), len(list_id)))
+    for ind, t in tqdm.tqdm(enumerate(list_timesteps)):
+        mat = create_distance_matrix(dataframe, t, list_id, distance_eval)
+        mat=symetrisation_matrice(mat,"RSSI")
+        mat=transform_adjacence_matrix(mat,threshold)
+        stack_sym_adj_matrix[ind, :, :] = mat
+
+    return stack_sym_adj_matrix, list_timesteps
+
+
+def rank_accelero_by_sensor(
+        df: pd.DataFrame, 
+        limit_rank: int = 10,
+        threshold: int = -40
+        )-> pd.DataFrame:
+    """
+    Fonction permettant de faire un classement des binômes de vaches qui passent le plus de temps proches (lorsqu'il y a détection des capteurs RSSI)
+
+    **Args :
+        df (Dataframe) : Dataframe contenant au moins les attributs "id_sensor" et "accelero_id" et lissé selon un pas de temps
+        limit_rank (int) : Paramètre permettant de limiter les rangs à afficher. Si on souhaite avoir le top 3 ou top 10 par exemple
+        threshold (int) : Seuil de distance RSSI choisis
+
+    **Returns : 
+        pd.DataFrame : Dataframe avec les attributs "id_sensor" et "accelero_id" ainsi que la colonne de comptage "count"
+    """
+    # Filtrer les lignes où "id_sensor" et "accelero_id" sont différents
+    filtered_df = df[df['id_sensor'] != df['accelero_id']]
+    filtered_df = filtered_df[filtered_df['RSSI'] >= threshold]
+    
+    # Compter les occurrences de "accelero_id" pour chaque "id_sensor"
+    counts = (filtered_df
+              .groupby(['id_sensor', 'accelero_id'])
+              .size()  # Compte les occurrences
+              .reset_index(name='count')  # Renomme la colonne de comptage
+              )
+
+    # Trier les résultats pour chaque "id_sensor" par ordre décroissant de "count"
+    sorted_counts = counts.sort_values(by=['id_sensor', 'count'], ascending=[True, False])
+    
+    # Limiter le nombre de "accelero_id" par "id_sensor"
+    top_counts = sorted_counts.groupby('id_sensor').head(limit_rank)
+    
+    return top_counts
+
+
+
