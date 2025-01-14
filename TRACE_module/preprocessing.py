@@ -178,7 +178,7 @@ def transform_adjacence_matrix(
     
     """
 
-    return matrice.where(matrice>threshold, 1,0)
+    return np.where(matrice>threshold, 1,0)
 
     
 
