@@ -56,3 +56,14 @@ def subset_int_consecutif(liste_num : list[int]) -> list:
         else : # Si c'est un liste d'entier consécutifs on les ajoutent 
             if are_consecutive(list_num) : liste_consecutif.append(list_num)
     return liste_consecutif
+
+def subset_int(liste_num : list[int]) -> list : 
+    """Fonction qui renvoie le powerset des nombres
+
+    Args:
+        liste_num (list[int]): Liste des numéros à partir desquels il faut faire le powerset
+
+    Returns:
+        list: List de toutes les combinaisons de subsets
+    """
+    return powerset(liste_num)[1:]
