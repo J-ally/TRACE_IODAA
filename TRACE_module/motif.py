@@ -33,6 +33,13 @@ class Arc :
                       | ((self._ind1 == obj._ind2) & (self._ind2 == obj._ind1)))
         return result
 
+    def __hash__(self):
+        if self._oriented :
+            hashed = hash((self.ind1, self.ind2))
+        else :
+            hashed = hash(frozenset((self.ind1, self.ind2)))   
+        return hashed
+
     @property
     def inds(self):
         return (self._ind1, self._ind2)
@@ -44,6 +51,17 @@ class Arc :
     @property
     def ind2(self): 
         return self._ind2
+    
+    @property
+    def oriented(self):
+        return self._oriented
+    
+    @oriented.setter
+    def oriented(self,val):
+        if not isinstance(val, bool): 
+            raise ValueError("l'attribut oriented doit être un booléen")
+        else :
+            self._oriented = val
     
     
 
@@ -114,17 +132,26 @@ class Motif:
         return self.dict_arc[key]
     
     def __eq__(self,motif):
-        if self._oriented :
-            result = (self.dict_arc == motif.dict_arc)
-        else : 
-            result = (set(self.list_arc) == set(motif.list_arc))
-        return result
+        return (set(self.list_arc) == set(motif.list_arc))
     
     def __hash__(self):
-        return hash(tuple(self.list_arc))
+        return hash(frozenset(self.list_arc))
 
     def __len__(self): 
         return len(self.list_arc)
+    
+    @property
+    def oriented(self): 
+        return self._oriented
+    
+    @oriented.setter
+    def oriented(self,val):
+        if not isinstance(val, bool): 
+            raise ValueError("l'attribut oriented doit être un booléen")
+        else :
+            self._oriented = val
+            for arc in self.list_arc : arc._oriented = self._oriented
+            
     
     def __add__(self, arc : Arc):
         """Ajout d'un arc en fin de séquence de motif

@@ -30,3 +30,14 @@ sequence = [
 
 # Dictionnaire de comptage qui a pour clé un motif (cf figure 2 du papier)
 
+M1 = Motif(
+    Arc("a","b"),
+    Arc("a","c"),
+    Arc("c","a"),
+    oriented= False)
+
+M2 = Motif(
+    Arc("a","c"),
+    Arc("b","a"),
+    Arc("c","a"),
+    oriented= False)
