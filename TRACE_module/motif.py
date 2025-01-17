@@ -2,7 +2,8 @@
 
 from datetime import datetime,timedelta
 from tqdm import tqdm
-from utils import *
+from TRACE_module.utils import *
+import numpy as np
 
 ###  Définition des types 
 type Individu = str  # Accelero_id de la vache
@@ -29,8 +30,7 @@ class Arc :
         if self._oriented :
             result = ((self._ind1 == obj._ind1) & (self._ind2 == obj._ind2))
         else :
-            result = (((self._ind1 == obj._ind1) & (self._ind2 == obj._ind2)) 
-                      | ((self._ind1 == obj._ind2) & (self._ind2 == obj._ind1)))
+            result = ({self._ind1, self._ind2} == {obj._ind1, obj._ind2}) 
         return result
 
     def __hash__(self):
@@ -55,16 +55,13 @@ class Arc :
     @property
     def oriented(self):
         return self._oriented
-    
-    @oriented.setter
-    def oriented(self,val):
-        if not isinstance(val, bool): 
-            raise ValueError("l'attribut oriented doit être un booléen")
-        else :
-            self._oriented = val
-    
-    
 
+    @oriented.setter
+    def oriented(self, val):
+        if not isinstance(val, bool) : 
+            raise ValueError("La valeur d'orientation doit être un booléen : True -> Orienté, False -> Non-orienté")
+        self._oriented = val
+    
 
 class Interaction :
     def __init__(self, ind1 : Individu, ind2 : Individu, timestep : datetime) : 
@@ -115,43 +112,35 @@ class Motif:
         """ Objet Motif : séquence d'arc ordonnés)
         """
         self._oriented = oriented
-        self.list_arc = list(args)
-        for arc in self.list_arc : arc._oriented = self._oriented
-
-        self.dict_arc = dict(zip([i for i in range(len(self.list_arc))], self.list_arc))
-        
+        if self._oriented :
+            self._list_arc = tuple(args)
+        else : 
+            args_not_oriented = []
+            for arc in args : 
+                if arc.oriented : 
+                    arc.oriented = False
+                args_not_oriented.append(arc)
+            self._list_arc = tuple(sorted(args_not_oriented, key= lambda arc : sorted((arc.ind1, arc.ind2)))) 
 
     def __repr__(self):
-        to_print = ""
-        for key,arc in self.dict_arc.items() : 
-            to_print += f"{key} : {arc} \n "
-        to_print = f"Motif({to_print}, Oriented : {self._oriented})"
-        return to_print
+        arcs = ", ".join(map(str, self._list_arc))
+        return f"Motif( {arcs}, oriented : {self._oriented})"
     
     def __getitem__(self,key):
-        return self.dict_arc[key]
+        return self._list_arc[key]
     
     def __eq__(self,motif):
-        return (set(self.list_arc) == set(motif.list_arc))
+        return (motif.oriented == self.oriented) and (motif._list_arc == self._list_arc)
     
     def __hash__(self):
-        return hash(frozenset(self.list_arc))
+        return hash((self._oriented, self._list_arc))
 
     def __len__(self): 
-        return len(self.list_arc)
+        return len(self._list_arc)
     
     @property
     def oriented(self): 
         return self._oriented
-    
-    @oriented.setter
-    def oriented(self,val):
-        if not isinstance(val, bool): 
-            raise ValueError("l'attribut oriented doit être un booléen")
-        else :
-            self._oriented = val
-            for arc in self.list_arc : arc._oriented = self._oriented
-            
     
     def __add__(self, arc : Arc):
         """Ajout d'un arc en fin de séquence de motif
@@ -162,8 +151,9 @@ class Motif:
         Returns:
             Motif : Motif avec l'arc ajouté au début 
         """
-        list_arc = self.list_arc + [arc]
-        return Motif(*list_arc, oriented= self._oriented)
+        if not self._oriented : 
+            arc._oriented = False
+        return Motif(*(self._list_arc + (arc,)), oriented= self._oriented)
     
     def add_suffix(self, arc : Arc):
         """Ajout d'un arc en début de séquence de motif
@@ -174,8 +164,9 @@ class Motif:
         Returns:
             Motif : Motif avec l'arc ajouté au début 
         """
-        list_arc = [arc] + self.list_arc
-        return Motif(*list_arc, oriented= self._oriented)
+        if not self._oriented : 
+            arc._oriented = False
+        return Motif(*((arc,) + self._list_arc), oriented= self._oriented)
 
     
     def graph(self):
@@ -192,14 +183,37 @@ class Motif:
         """
         list_sub_motif = [] #Liste qui va contenir les sous motifs 
         if self._oriented : 
-            sub_seq_keys = subset_int_consecutif(list(self.dict_arc.keys())) # On récupère les clées de tous les sous motifs
+            sub_seq_keys = subset_int_consecutif([i for i in range(len(self._list_arc))]) # On récupère les clées de tous les sous motifs
         else :
-            sub_seq_keys = subset_int(list(self.dict_arc.keys()))
+            sub_seq_keys = subset_int([i for i in range(len(self._list_arc))])
         for list_keys in sub_seq_keys : 
-            list_sub_motif.append(Motif(*[self.dict_arc[key] for key in list_keys], oriented= self._oriented)) # Instanciation des motifs à partir des arc
+            list_sub_motif.append(Motif(*[self._list_arc[key] for key in list_keys], oriented= self._oriented)) # Instanciation des motifs à partir des arc
         return list_sub_motif
         
         
+
+def get_list_interactions(
+       
+        stack : np.ndarray, 
+        list_id : list[str],
+        list_time_steps : list[datetime]
+        ) -> list[Interaction]: 
+        
+    list_sequence=[]
+        
+    for i in tqdm(list_id): 
+        for j in list_id[list_id.index(i):]: 
+            
+            index_i,index_j=list_id.index(i),list_id.index(j)
+            
+            for t in range(len(list_time_steps)) : 
+               
+                if stack[t,index_i,index_j]==1 : 
+                    
+                    list_sequence.append(Interaction(i,j,list_time_steps[t]))
+                    
+        
+    return list_sequence
     
     
     
