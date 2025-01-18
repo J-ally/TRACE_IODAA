@@ -4,4 +4,12 @@ Bibliographie/
 TRACE_module/__pycache__/
 PFR.yml
 TRACE_module/test_preprocessing.py
+<<<<<<< HEAD
 savings/*
+=======
+<<<<<<< HEAD
+.env
+=======
+savings/*
+>>>>>>> eea0b82 (Ajout fichier)
+>>>>>>> main
