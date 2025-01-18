@@ -2,7 +2,7 @@
 
 from datetime import datetime,timedelta
 from tqdm import tqdm
-from utils import *
+from TRACE_module.utils import *
 import numpy as np
 
 #############################################################################
@@ -287,18 +287,22 @@ def count_instance_motif(sequence: Sequence, motif: Motif, delta: int) -> int:
     """
     # On tri la séquence d'intéraction 
     sequence.sort()
-    delta = timedelta(seconds = delta)
+    delta = np.timedelta64(delta,"s")
 
     # On récupère la longueur du motif :
     l_motif = len(motif)
     # Génération de tous les sous motifs 
     submotifs = motif.gen_submotif()
     l_submotifs = len(submotifs) #Nombre de sous-motifs 
+    print(f"Submotifs generated (# : {l_submotifs})")
 
     # Dictionnaire de comptage qui a pour clé un motif (cf figure 2 du papier)
     counts = dict(zip(submotifs, [0 for i in range(l_submotifs)]))
     dict_counts = dict(zip(submotifs, [[0] for i in range(l_submotifs)]))
     start = 0 
+
+    print("Dictionary created !")
+    print("Entering the loop")
 
     # Début de la boucle de counts 
     for end in tqdm(range(len(sequence))):
