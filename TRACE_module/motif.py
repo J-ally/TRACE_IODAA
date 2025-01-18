@@ -2,7 +2,7 @@
 
 from datetime import datetime,timedelta
 from tqdm import tqdm
-from TRACE_module.utils import *
+from utils import *
 import numpy as np
 
 ###  Définition des types 
@@ -279,11 +279,42 @@ def count_instance_motif(sequence: Sequence, motif: Motif, delta: int) -> int:
 
     return counts, dict_counts
     
-        
-            
-    
-    
+if __name__ == "__main__" : 
+    date_init = datetime.fromisoformat("2024-12-11T12:00:00")
+
+    M_oriented = Motif(
+        Arc("a","b"),
+        Arc("a","c"),
+        Arc("c","a")
+    )
+
+    M_not_oriented = Motif(
+        Arc("a","b"),
+        Arc("a","c"),
+        Arc("c","a"),
+        oriented= False)
+
+    sequence = [
+        Interaction("a","b", date_init + timedelta(seconds=25)),
+        Interaction("a","c", date_init + timedelta(seconds=17)),
+        Interaction("a","c", date_init + timedelta(seconds=28)),
+        Interaction("a","c", date_init + timedelta(seconds=30)),
+        Interaction("a","c", date_init + timedelta(seconds=35)),
+        Interaction("c","a", date_init + timedelta(seconds=15)),
+        Interaction("c","a", date_init + timedelta(seconds=32)),
+    ]
 
 
+    # Dictionnaire de comptage qui a pour clé un motif (cf figure 2 du papier)
 
+    M1 = Motif(
+        Arc("a","b"),
+        Arc("a","c"),
+        Arc("c","a"),
+        oriented= False)
 
+    M2 = Motif(
+        Arc("a","c"),
+        Arc("b","a"),
+        Arc("c","a"),
+        oriented= False)
