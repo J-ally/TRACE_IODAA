@@ -5,12 +5,18 @@ from tqdm import tqdm
 from utils import *
 import numpy as np
 
-###  Définition des types 
+#############################################################################
+                        # Types definition
+#############################################################################
+
 type Individu = str  # Accelero_id de la vache
 type TimeStep = datetime      # Timestep en seconde ?
 type Sequence = list[Interaction]  # Séquence d'intéraction
 type ListeMotif = list[Motif]  # Liste de motifs
 
+#############################################################################
+                        # Classes definition
+#############################################################################
 
 class Arc :
     def __init__(self, ind1 : Individu, ind2 : Individu, oriented : bool = True):
@@ -121,6 +127,20 @@ class Motif:
         Args:
             args (Arc) : some Arc (cf. Above) that need to have the same orientation for all of them
             oriented (bool, optional): True -> Graph i oriented / False : the graph is not oriented. Defaults to True.
+
+        Example : 
+        
+        M_oriented = Motif(
+            Arc("a","b"),
+            Arc("a","c"),
+            Arc("c","a"))
+
+        M_not_oriented = Motif(
+            Arc("a","b"),
+            Arc("a","c"),
+            Arc("c","a"),
+            oriented= False)
+
         """
         self._oriented = oriented
         if self._oriented :
@@ -204,31 +224,50 @@ class Motif:
         
 
 def get_list_interactions(
-       
         stack : np.ndarray, 
         list_id : list[str],
         list_time_steps : list[datetime]
         ) -> list[Interaction]: 
-        
+    """Generate the interaction list from the stack matrix
+
+    Args:
+        stack (np.ndarray): 3D adjacency matrix (cow_id x cow_id x time_step)
+        list_id (list[str]): List of the Ids of the cows
+        list_time_steps (list[datetime]): List of the timesteps
+
+    Returns:
+        list[Interaction]: List of the Interaction
+
+        Example :     
+
+        date_init = datetime.fromisoformat("2024-12-11T12:00:00")
+
+        sequence = [
+        Interaction("a","b", date_init + timedelta(seconds=25)),
+        Interaction("a","c", date_init + timedelta(seconds=17)),
+        Interaction("a","c", date_init + timedelta(seconds=28)),
+        Interaction("a","c", date_init + timedelta(seconds=30)),
+        Interaction("a","c", date_init + timedelta(seconds=35)),
+        Interaction("c","a", date_init + timedelta(seconds=15)),
+        Interaction("c","a", date_init + timedelta(seconds=32)),
+        ]
+    """
     list_sequence=[]
         
     for i in tqdm(list_id): 
+
         for j in list_id[list_id.index(i):]: 
-            
             index_i,index_j=list_id.index(i),list_id.index(j)
-            
+
             for t in range(len(list_time_steps)) : 
-               
                 if stack[t,index_i,index_j]==1 : 
-                    
                     list_sequence.append(Interaction(i,j,list_time_steps[t]))
-                    
         
     return list_sequence
    
 
 #############################################################################
-                        # Algorithm 1 of the paper (cf. doi at the beginning of the code)
+     # Algorithm 1 of the paper (cf. doi at the beginning of the code)
 #############################################################################
 
 def count_instance_motif(sequence: Sequence, motif: Motif, delta: int) -> int:
@@ -302,8 +341,7 @@ if __name__ == "__main__" :
     M_oriented = Motif(
         Arc("a","b"),
         Arc("a","c"),
-        Arc("c","a")
-    )
+        Arc("c","a"))
 
     M_not_oriented = Motif(
         Arc("a","b"),
