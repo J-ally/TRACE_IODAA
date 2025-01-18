@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+Created on Fri Jan 17 23:03:45 2025
+
+@author: bouchet
+"""
+
 
 import pandas as pd
 import os
@@ -7,7 +13,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import tqdm
-
+from multiprocessing import Pool, cpu_count
 
 
 def lissage_signal(
@@ -48,6 +54,8 @@ def lissage_signal(
     return smoothed_file
 
 
+
+
 def format_df_to_concatenation(file: str, smooth_time: str = "20s") -> pd.DataFrame:
     """
 
@@ -63,12 +71,14 @@ def format_df_to_concatenation(file: str, smooth_time: str = "20s") -> pd.DataFr
     id_sensor = os.path.split(file)[1].split("_")[1]
 
     dataframe = pd.read_parquet(file, engine="pyarrow")
-    print("1", dataframe.columns)
+    # print("1", dataframe.columns)
     dataframe = lissage_signal(DataFrame=dataframe, smooth_time=smooth_time)
     dataframe["id_sensor"] = id_sensor
 
-    print(2, dataframe.columns)
+    # print(2, dataframe.columns)
     return dataframe
+
+
 
 
 def concatenate_df(liste_files: list[str], smooth_time: str = "20s") -> pd.DataFrame:
@@ -79,165 +89,72 @@ def concatenate_df(liste_files: list[str], smooth_time: str = "20s") -> pd.DataF
 
     concatenated_df = pd.DataFrame()
     for file in liste_files:
-        concatenated_df = pd.concat([concatenated_df, format_df_to_concatenation(file, smooth_time= smooth_time)])
+        concatenated_df = pd.concat(
+            [concatenated_df, format_df_to_concatenation(file, smooth_time=smooth_time)])
 
     return concatenated_df
 
 
-def transform_rssi_to_distance(
-    dataframe: pd.DataFrame, type_evaluation: str = "log"
-) -> pd.DataFrame:
-    """
-    Cette fonction permet de convertir le signal en une mesure de distance.
-    Elle applique une transformation sur la colonne 'RSSI' et l'applique à une nouvelle colonne créee, "evaluated_distance"
-    Elle renvoie un dataframe
-
-    On pourra enrirchir cette fonction à travers l'ajout de modalités "type_evaluation" (défaut : log)
-
-    type_evaluation : log,
-
-    Modèle "log" : On utilise le modèle RSSI = P0 - 10nlog10(d) + X. On considère P0,X=0 (distances définies à une constante près, et n égal à 3.
-    Il est important de noter qu'avec cette méthode TRES simpliste, les distances ne sont pas interprétables en mêtres
-
-    """
-
-    if type_evaluation == "log":
-        dataframe["evaluated_distance"] = 10 ** (-dataframe["RSSI"] / (10 * 3))
-
-        return dataframe
 
 
-def create_distance_matrix(
-    dataframe: pd.DataFrame,
-    particular_time_step: str,
-    list_id: list[str],
-    distance_eval: str = "evaluated_distance",
-) -> np.ndarray:
-    """
-    'glob_sensor_DateTime', 'accelero_id', 'RSSI', 'id_sensor', 'evaluated_distance'
-    En premier lieu, je stock les matrices de chaque time step dans un dictionnaire (associé à une clé contenant le temps exact).
 
-
-    Particular_time_step : permet de selectionner un unique time step particulier
-
-    """
-    subset_dataframe = dataframe[
-        dataframe["glob_sensor_DateTime"] == particular_time_step
-    ]
-    # dataframe=dataframe.reset_index()
-    nb_id = len(list_id)
-    matrice_df = np.ones((nb_id, nb_id)) * np.nan  # Liste de nan initialement
-    # print(matrice_df.shape  )
-
-    matrice_df = pd.DataFrame(
-        matrice_df, index=list_id, columns=list_id
-    )  # j'ajoute l'indexation des lignes et des colonnes avec les ID des vaches
-
-    for index, row in subset_dataframe.iterrows():
-        vache_capte = row["accelero_id"]
-        vache_captant = row["id_sensor"]
-        matrice_df.loc[vache_capte, vache_captant] = row[distance_eval]
-
-    return matrice_df.to_numpy()
-
-    # print(time_steps, "\n ################")
-
-
-def create_matrix_stack(
-    dataframe: pd.DataFrame,
-    list_id: list[str],
-    distance_eval: str = "evaluated_distance",
-) -> tuple[np.ndarray, list[str]]:
-    list_timesteps = pd.unique(dataframe["glob_sensor_DateTime"])
-    stack_matrix = np.zeros((len(list_timesteps), len(list_id), len(list_id)))
-    for ind, t in tqdm.tqdm(enumerate(list_timesteps)):
-        mat = create_distance_matrix(dataframe, t, list_id, distance_eval)
-        stack_matrix[ind, :, :] = mat
-
-    return stack_matrix, list_timesteps
-
-def transform_adjacence_matrix(
-        matrice : np.ndarray, 
-        threshold : float, 
+def create_stack(
+        dataframe : pd.DataFrame, 
+        list_id : list[str], 
+        distance_eval: str = "RSSI", 
+        symetrisation : bool=True, 
+        adjacence : bool=True, 
+        threshold : float=-65., 
         
-        ) -> np.ndarray : 
-    """
-    
-    
-
-    Parameters
-    ----------
-    matrix : np.ndarray
-    
-    threshold : Float
-        Doit correspondre à l'unité de valeur de la matrice prise en argument (distance, signal RSSI,..)
-    
-    -------
-    
-    Retourne une matrice d'adjacence 
-    
-    """
-
-    return np.where(matrice>threshold, 1,0)
-
-    
-
-def symetrisation_matrice(
-        matrice : np.ndarray, 
-        type_ : str = "RSSI"
+        )  -> tuple((np.array, list[str])) :
         
-        ) -> np.ndarray : 
-    """
-    
 
-    Parameters
-    ----------
-    matrice : np.ndarray
-        DESCRIPTION.
+        """
         
         
-    type_ : str, optional. Type de la matrice prise en argument. 
-    The default is "RSSI". Changer pour un autre type
-
-    Returns
-    -------
-    Retourne une matrice symétrisée, du même type que celle prise en argument 
-    
-    """
-    
-    matrice_res=np.zeros(matrice.shape)
-    
-    for i in range(matrice.shape[0]) :
+        """
         
-         if type_ in ["RSSI","evaluated_distance"]: 
-             a= np.fmin(matrice[i,:],matrice[:,i])
-             matrice_res[i,:], matrice_res[:,i] = a,a 
-         
-    return matrice_res
+        id_to_index = {id_: idx for idx, id_ in enumerate(list_id)}
+
+       
+        dataframe["row_idx"] = dataframe["accelero_id"].map(id_to_index)
+        dataframe["col_idx"] = dataframe["id_sensor"].map(id_to_index)
+
+       
+        nb_id = len(list_id)
+        list_timesteps = pd.unique(dataframe["glob_sensor_DateTime"])
+        
+        
+
+        
+        timestep_to_idx = {timestep: idx for idx, timestep in enumerate(list_timesteps)}
+
+       
+        timestep_indices = dataframe["glob_sensor_DateTime"].map(timestep_to_idx)
+        row_indices = dataframe["row_idx"].to_numpy()
+        col_indices = dataframe["col_idx"].to_numpy()
+        values = dataframe[distance_eval].to_numpy()
 
 
 
+        stack = np.full((len(list_timesteps), nb_id, nb_id), np.nan)
+        stack[timestep_indices, row_indices, col_indices] = values
 
-def create_stack_sym_adj(
-    dataframe: pd.DataFrame,
-    list_id: list[str],
-    distance_eval: str = "RSSI",
-    threshold: float = -65
-    )-> tuple[np.ndarray, list[str]]:
-    """Cherche à créer un stack de matrices d'adjacence symétriques à partir du dataframe avec les bons timesteps 
+        if symetrisation : 
+            if distance_eval in ["RSSI", "evaluated_distance"] : 
+                 stack=np.fmin(stack,stack.transpose(0,2,1)) 
+        
+        if adjacence: 
+            if distance_eval in ["RSSI", "evaluated_distance"] : 
+                
+                stack=np.where(stack < threshold, 1,0 )
+                
+        return stack,list_timesteps           
+   
+    
+   
+    
 
-    Args:
-        dataframe (pd.DataFrame): le dataframe des données agglomérées
-        threshold (float): le threshold RSSI à partir duquel on considére que il y a intercation;
-        les valeurs plus grande(on est avec des RSSI négatifs) seront des 1 dan sla matrices d'adjacences.
-    Output: tuple avec le dataframe (index temps, dim1, dim2) et la liste des time steps list_timesteps
-    """
-    list_timesteps = pd.unique(dataframe["glob_sensor_DateTime"])
-    stack_sym_adj_matrix = np.zeros((len(list_timesteps), len(list_id), len(list_id)))
-    for ind, t in tqdm.tqdm(enumerate(list_timesteps)):
-        mat = create_distance_matrix(dataframe, t, list_id, distance_eval)
-        mat=symetrisation_matrice(mat,"RSSI")
-        mat=transform_adjacence_matrix(mat,threshold)
-        stack_sym_adj_matrix[ind, :, :] = mat
 
-    return stack_sym_adj_matrix, list_timesteps
+
+            
