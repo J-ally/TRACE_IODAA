@@ -97,6 +97,27 @@ def concatenate_df(liste_files: list[str], smooth_time: str = "20s") -> pd.DataF
 
 
 
+def transform_rssi_to_distance(
+    dataframe: pd.DataFrame, type_evaluation: str = "log"
+) -> pd.DataFrame:
+    """
+    Cette fonction permet de convertir le signal en une mesure de distance.
+    Elle applique une transformation sur la colonne 'RSSI' et l'applique à une nouvelle colonne créee, "evaluated_distance"
+    Elle renvoie un dataframe
+
+    On pourra enrirchir cette fonction à travers l'ajout de modalités "type_evaluation" (défaut : log)
+
+    type_evaluation : log,
+
+    Modèle "log" : On utilise le modèle RSSI = P0 - 10nlog10(d) + X. On considère P0,X=0 (distances définies à une constante près, et n égal à 3.
+    Il est important de noter qu'avec cette méthode TRES simpliste, les distances ne sont pas interprétables en mêtres
+
+    """
+
+    if type_evaluation == "log":
+        dataframe["evaluated_distance"] = 10 ** (-dataframe["RSSI"] / (10 * 3))
+
+        return dataframe
 
 def create_stack(
         dataframe : pd.DataFrame, 
