@@ -14,6 +14,13 @@ type ListeMotif = list[Motif]  # Liste de motifs
 
 class Arc :
     def __init__(self, ind1 : Individu, ind2 : Individu, oriented : bool = True):
+        """Definition of an Arc/ Edge in the sense of a Graph
+
+        Args:
+            ind1 (Individu): First individual
+            ind2 (Individu): Second individual
+            oriented (bool, optional): True : This is an Arc, False : This is an edge. Defaults to True.
+        """
 
         self._ind1 = ind1 
         self._ind2 = ind2 
@@ -109,7 +116,11 @@ class Interaction :
     
 class Motif:
     def __init__(self,*args : Arc, oriented : bool = True):
-        """ Objet Motif : séquence d'arc ordonnés)
+        """Motif au sens du papier, c'est un graph orienté ou non
+
+        Args:
+            args (Arc) : some Arc (cf. Above) that need to have the same orientation for all of them
+            oriented (bool, optional): True -> Graph i oriented / False : the graph is not oriented. Defaults to True.
         """
         self._oriented = oriented
         if self._oriented :
@@ -214,9 +225,11 @@ def get_list_interactions(
                     
         
     return list_sequence
-    
-    
-    
+   
+
+#############################################################################
+                        # Algorithm 1 of the paper (cf. doi at the beginning of the code)
+#############################################################################
 
 def count_instance_motif(sequence: Sequence, motif: Motif, delta: int) -> int:
     """
@@ -279,6 +292,10 @@ def count_instance_motif(sequence: Sequence, motif: Motif, delta: int) -> int:
 
     return counts, dict_counts
     
+#############################################################################
+                        # Tests for the module
+#############################################################################
+
 if __name__ == "__main__" : 
     date_init = datetime.fromisoformat("2024-12-11T12:00:00")
 
