@@ -1,4 +1,3 @@
-name: iodaa
 channels:
   - conda-forge
 dependencies:
@@ -171,5 +170,3 @@ dependencies:
     - tokenizers==0.21.0
     - torch==2.5.1
     - tqdm==4.67.1
-
-prefix: "/Users/timotheesanchez/.local/share/mamba/envs/iodaa"
