@@ -81,8 +81,8 @@ def create_test_data(
                                      [-50,np.nan,np.nan,np.nan,np.nan],
                                     ])
            
-            matrice_symetrie[i,:,:]=np.fmin(matrice_RSSI[i,:,:], matrice_RSSI[i,:,:].T)
-            matrice_symetrie_adjacence[i,:,:]=np.where(matrice_symetrie[i,:,:]<thresh,1,0)
+            matrice_symetrie[i,:,:]=np.fmax(matrice_RSSI[i,:,:], matrice_RSSI[i,:,:].T)
+            matrice_symetrie_adjacence[i,:,:]=np.where(matrice_symetrie[i,:,:]>thresh,1,0)
             
             
             

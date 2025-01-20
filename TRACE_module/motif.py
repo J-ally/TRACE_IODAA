@@ -4,15 +4,15 @@ from datetime import datetime,timedelta
 from tqdm import tqdm
 from TRACE_module.utils import *
 import numpy as np
-
+from typing import List
 #############################################################################
                         # Types definition
 #############################################################################
 
-type Individu = str  # Accelero_id de la vache
-type TimeStep = datetime      # Timestep en seconde ?
-type Sequence = list[Interaction]  # Séquence d'intéraction
-type ListeMotif = list[Motif]  # Liste de motifs
+Individu = str  # Accelero_id de la vache
+TimeStep = datetime      # Timestep en seconde ?
+Sequence = List # Séquence d'intéraction
+ListeMotif = List # Liste de motifs
 
 #############################################################################
                         # Classes definition
