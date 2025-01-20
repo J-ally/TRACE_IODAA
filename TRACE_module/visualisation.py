@@ -78,3 +78,50 @@ def plot_accelero_ranking(df: pd.DataFrame):
     
     # Afficher le graphique
     plt.show()
+    
+def heatmap_interactions_number( 
+        matrix_interaction_number : np.ndarray, 
+        list_id : list[str]
+        ) -> None :
+            
+            ## Plot the heatmap of the interactions number for each couple
+            plt.figure(figsize=(8, 6))
+            plt.imshow(matrix_interaction_number , cmap='hot', interpolation='nearest')
+            plt.colorbar(label="Maximum Sequence ID")
+            plt.title(" Between Cows")
+            plt.xlabel("Cow ID (Column)")
+            plt.ylabel("Cow ID (Row)")
+            plt.xticks(ticks=np.arange(len(list_id)), labels=list_id, rotation=45)
+            plt.yticks(ticks=np.arange(len(list_id)), labels=list_id)
+            plt.show()
+            
+            
+def barplot_interaction_cows(
+        number_of_daily_interaction : np.ndarray, 
+        average_duration_of_an_interaction : np.ndarray, 
+        
+        list_id : list[str]
+        ) -> None:
+    """
+    """
+    
+    fig, ax = plt.subplots(figsize=(12, 6))
+    # Bar width and x-axis positions
+    bar_width = 0.35
+    x = np.arange(1, 17)  # Cow indices (1 to 16)
+
+    # Plotting the bars
+    bars1 = ax.bar(x - bar_width / 2, number_of_daily_interaction, bar_width, label='Avg Daily Interactions')
+    bars2 = ax.bar(x + bar_width / 2, average_duration_of_an_interaction, bar_width, label='Avg Interaction Time (mins)')
+
+    # Labeling the chart
+    ax.set_xlabel('Cow Index')
+    ax.set_ylabel('Values')
+    ax.set_title('Comparison of Average Daily Interactions and Average Interaction Time for Each Cow')
+    ax.set_xticks(x)
+    ax.set_xticklabels(list_id)
+    ax.legend()
+
+    # Display the plot
+    plt.tight_layout()
+    plt.show() 

@@ -154,3 +154,12 @@ def from_seq_to_daily_interactions(matrice_seq,filtered_timestamps) :
     daily_interactions_per_cow = np.nansum(number_of_sequence, axis=0) / num_days
 
     return daily_interactions_per_cow
+
+
+def from_stack_to_number_of_interaction_sequences(
+        matrice : np.ndarray
+        ) -> np.ndarray: 
+    """
+    
+    """
+    return np.nanmax(np.nan_to_num(matrice, nan=0), axis=0)

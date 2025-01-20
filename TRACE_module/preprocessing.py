@@ -175,6 +175,50 @@ def create_stack(
    
     
    
+    
+def crop_start_end_stack(stack  : np.ndarray, 
+                         list_timesteps : pd.Series , 
+                         start : pd.Timestamp, 
+                         end : pd.Timestamp
+                        ) -> tuple:
+        """
+    
+    
+
+    Parameters
+    ----------
+    stack : np.ndarray
+        DESCRIPTION.
+    list_timesteps : pd.Series
+        DESCRIPTION.
+    start : pd.Timestamp
+        DESCRIPTION.
+    end : pd.Timestamp
+        DESCRIPTION.
+
+    Returns
+    -------
+    tuple
+        DESCRIPTION.
+
+    """
+    
+        time_filter = (list_timesteps >= start) & (list_timesteps <= end)
+        filtered_timestamps = list_timesteps[time_filter]
+        stack_cropped = stack[time_filter]
+        
+        
+        return stack_cropped, filtered_timestamps
+    
+    
+    
+        
+        
+        
+
+
+                    
+    
 
 
 
