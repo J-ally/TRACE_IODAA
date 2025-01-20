@@ -93,7 +93,7 @@ t5=time.perf_counter()
 
 
 ###################################################################
-#ETAPE 6- Création d'un stack de matrice d'adjacence symétriques  #
+#ETAPE 6- Analyses                                                #
 ###################################################################
 
 
@@ -107,19 +107,21 @@ filtered_timestamps = list_timesteps[time_filter]
 # ### Analysis Pipeline ###
 # cows_id=list_id
 # ## Preprocessing of the RSSI matrix : time and symmetry
-distances_time_cleaned = stack[time_filter]
+distances_time_cleaned = stack#[time_filter]
 distances_clean=distances_time_cleaned
-
-
+t5b=time.perf_counter() 
+distances_clean=np.where(distances_clean==0,np.nan,distances_clean)
 ## Creation a a sequence matrix
 matrice_seq = from_distances_to_sequences_stack(distances_clean)
-#filtered_timestamps=list_timesteps
+t5c=time.perf_counter()
+
+filtered_timestamps=list_timesteps
 # calculation of the number of interaction each couple of cows had during the data collection
 number_of_interaction_sequences = np.nanmax(np.nan_to_num(matrice_seq, nan=0), axis=0)
-
+t5d=time.perf_counter() 
 # calulate the number of daily interactions each cows has
 number_of_daily_interaction = from_seq_to_daily_interactions(matrice_seq,filtered_timestamps)
-
+t5e=time.perf_counter() 
 # calculate the average time one interaction lasts for each cow
 average_duration_of_an_interaction = from_seq_to_average_interaction_time(matrice_seq)
 
@@ -161,9 +163,9 @@ ax.legend()
 
 # Display the plot
 plt.tight_layout()
-plt.show()
+plt.show() 
 
 
-print("étape 1 : {} \n étape 2 : {} \n étape 3 {} \n étape 4 : {} \n etape 5 : {}".format(t2-t1,t3-t2,t4-t3,t5-t4,t6-t5))
+print("--BENCHMArk-- \n ==========\n étape 1 - localisation des données: {} \n étape 2 - concaténation des fichiers et création d'un dataframe unique ': {} \n étape 3 -transformation des signaux RSSI en distance {} \n étape 4 - Mise en forme des données sous forme matricielle: {} \n étape 5 : Analyse descriptive :{} ".format(t2-t1,t3-t2,t4-t3,t5-t4,t6-t5))
 
 

@@ -162,13 +162,14 @@ def create_stack(
         stack[timestep_indices, row_indices, col_indices] = values
 
         if symetrisation : 
-            if distance_eval in ["RSSI", "evaluated_distance"] : 
-                 stack=np.fmin(stack,stack.transpose(0,2,1)) 
-        
+            if distance_eval in ["RSSI"] : 
+                 stack=np.fmax(stack,stack.transpose(0,2,1)) 
+            else :
+                stack=np.fmin(stack,stack.transpose(0,2,1)) 
         if adjacence: 
             if distance_eval in ["RSSI", "evaluated_distance"] : 
                 
-                stack=np.where(stack < threshold, 1,0 )
+                stack=np.where(stack > threshold, 1,0 )
                 
         return stack,list_timesteps           
    
