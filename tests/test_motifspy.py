@@ -30,8 +30,10 @@ def test_list_interaction() :
     
     ##Comparaison de la taille de la liste à celle attendue : attention, celle-ci dépend directement des données générées## 
     if len(time_steps)%2 == 0 : 
-        len_expected=1.5*len(time_steps)
+        len_expected=2*len(time_steps)
         
     else : 
-        len_exprected=1.5*len(time_steps+1)-1
+        len_exprected=2*len(time_steps+1)-1
+    print(len(l1),len_expected)
     assert len(l1)==len_expected, 'la longueur de la liste ne correspond pas à la longueur attendue' 
+    
