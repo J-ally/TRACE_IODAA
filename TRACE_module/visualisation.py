@@ -60,7 +60,7 @@ def plot_accelero_ranking(df: pd.DataFrame):
 
     # Créer un graphique en barres groupées
     plt.figure(figsize=(10, 6))
-    
+
     # Tracer les barres avec Seaborn
     sns.barplot(
         data=df,
@@ -69,42 +69,66 @@ def plot_accelero_ranking(df: pd.DataFrame):
         hue='accelero_id',  # Couleurs différentes pour chaque accelero_id
         dodge=True  # Pour séparer les barres par groupe
     )
-    
+
     # Ajouter des labels et un titre
     plt.xlabel('ID Sensor')
     plt.ylabel('Nombre d\'occurrences')
     plt.title('Classement des individus proches par animal')
     plt.legend(title='Accelero ID')
-    
+
     # Afficher le graphique
     plt.show()
-    
-def heatmap_interactions_number( 
-        matrix_interaction_number : np.ndarray, 
+
+def heatmap_interactions_number(
+        matrix_interaction_number : np.ndarray,
         list_id : list[str]
         ) -> None :
-            
-            ## Plot the heatmap of the interactions number for each couple
-            plt.figure(figsize=(8, 6))
-            plt.imshow(matrix_interaction_number , cmap='hot', interpolation='nearest')
-            plt.colorbar(label="Maximum Sequence ID")
-            plt.title(" Between Cows")
-            plt.xlabel("Cow ID (Column)")
-            plt.ylabel("Cow ID (Row)")
-            plt.xticks(ticks=np.arange(len(list_id)), labels=list_id, rotation=45)
-            plt.yticks(ticks=np.arange(len(list_id)), labels=list_id)
-            plt.show()
-            
-            
+
+    """
+    Function that traces a heatmap with the number of interactio for each cow couple
+
+    Parameters:
+    -----------
+    matrix_interaction_number : np.ndarray
+        2D array with the number of daily interactions for each cow couple
+    list_id : list[str]
+        List with the cows ID
+    --------
+
+    """
+
+    ## Plot the heatmap of the interactions number for each couple
+    plt.figure(figsize=(8, 6))
+    plt.imshow(matrix_interaction_number , cmap='hot', interpolation='nearest')
+    plt.colorbar(label="Maximum Sequence ID")
+    plt.title(" Between Cows")
+    plt.xlabel("Cow ID (Column)")
+    plt.ylabel("Cow ID (Row)")
+    plt.xticks(ticks=np.arange(len(list_id)), labels=list_id, rotation=45)
+    plt.yticks(ticks=np.arange(len(list_id)), labels=list_id)
+    plt.show()
+
+
 def barplot_interaction_cows(
-        number_of_daily_interaction : np.ndarray, 
-        average_duration_of_an_interaction : np.ndarray, 
-        
+        number_of_daily_interaction : np.ndarray,
+        average_duration_of_an_interaction : np.ndarray,
         list_id : list[str]
         ) -> None:
     """
+    Function that traces 2 boxplots for each cows : number of daily interaction and the duration of the interactions
+
+    Parameters:
+    -----------
+    number_of_daily_interaction : np.ndarray
+        1D array with the number of daily interactions for each cow.
+    average_duration_of_an_interaction : np.ndarray
+        1D array with an average interaction time for each cow
+    list_id : list[str]
+        List with the cows ID
+    --------
+
     """
-    
+
     fig, ax = plt.subplots(figsize=(12, 6))
     # Bar width and x-axis positions
     bar_width = 0.35
@@ -124,4 +148,43 @@ def barplot_interaction_cows(
 
     # Display the plot
     plt.tight_layout()
-    plt.show() 
+    plt.show()
+
+def boxplot_average_time_number_interactions(number_of_daily_interaction : np.array,
+                                             average_duration_of_an_interaction : np.array
+                                             ) -> None :
+
+    """
+    Function that traces 2 boxplots : number of daily interaction and the duration of the interactions
+
+    Parameters:
+    -----------
+    number_of_daily_interaction : np.ndarray
+        1D array with the number of daily interactions for each cow.
+    average_duration_of_an_interaction : np.ndarray
+        1D array with an average interaction time for each cow
+    --------
+
+    """
+
+    # Prepare box plot data
+    box_data_daily_interactions = number_of_daily_interaction
+    box_data_mean_duration = average_duration_of_an_interaction
+
+    # Plotting box plots
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+
+    # Box plot for daily interactions
+    axes[0].boxplot(box_data_daily_interactions, vert=True, patch_artist=True)
+    axes[0].set_title("Daily Interaction Counts per Cow")
+    axes[0].set_xlabel("Cows")
+    axes[0].set_ylabel("Mean Daily Interactions")
+
+    # Box plot for mean interaction duration
+    axes[1].boxplot(box_data_mean_duration, vert=True, patch_artist=True)
+    axes[1].set_title("Mean Interaction Duration per Cow")
+    axes[1].set_xlabel("Cows")
+    axes[1].set_ylabel("Mean Interaction Duration (Hours)")
+
+    plt.tight_layout()
+    plt.show()
