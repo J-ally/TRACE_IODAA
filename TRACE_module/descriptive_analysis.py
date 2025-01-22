@@ -16,7 +16,7 @@ def rank_accelero_by_sensor(
         limit_rank: int = 10,
         ) -> pd.DataFrame:
     """
-    Fonction permettant de faire un classement des binômes de vaches qui passent le plus de temps proches 
+    Fonction permettant de faire un classement des binômes de vaches qui passent le plus de temps proches
     (lorsqu'il y a détection des capteurs RSSI) et de manière continue
 
     **Args :
@@ -24,17 +24,17 @@ def rank_accelero_by_sensor(
         limit_rank (int) : Paramètre permettant de limiter les rangs à afficher. Si on souhaite avoir le top 3 ou top 10 par exemple
         threshold (int) : Seuil de distance RSSI choisis
 
-    **Returns : 
+    **Returns :
         pd.DataFrame : Dataframe avec les attributs "id_sensor" et "accelero_id" ainsi que les attributs du temps cumulé passé par binôme de vaches
         et par jour "count"
     """
     # Filtrer les lignes où "id_sensor" et "accelero_id" sont différents
     filtered_df = df[df['id_sensor'] != df['accelero_id']]
     filtered_df = filtered_df[filtered_df['RSSI'] >= threshold]
-    
+
     # Ajout de l'attribut "date" de la campagne de relevé des capteurs RSSI
     filtered_df["date"] = filtered_df['glob_sensor_DateTime'].dt.date
-    
+
     #Ajout de l'attribut "time_diff" qui calcule le temps d'écart entre le dernier temps de prise de mesure et celui actuellement considéré
     filtered_df['time_diff'] = filtered_df['glob_sensor_DateTime'].diff().dt.total_seconds()
 
@@ -63,7 +63,7 @@ def rank_accelero_by_sensor(
 
     # # Trier les résultats pour chaque "id_sensor" par ordre décroissant de "count"
     # sorted_metrics = metrics_analysis.sort_values(
-    #     by=['date', 'id_sensor', 'average_time_min'], 
+    #     by=['date', 'id_sensor', 'average_time_min'],
     #     ascending=[True, True, False])
     # # Limiter le nombre de "accelero_id" par "id_sensor"
     # top_metrics = sorted_metrics.groupby(['id_sensor']).head(limit_rank)
@@ -75,7 +75,7 @@ def from_distance_to_sequences_vector(vector, min_timesteps: int = 3, ignore_bre
     """
     Function that takes a 1D numpy array of distances or RSSI signal for several
     timesteps and returns a vector annotated with sequence IDs.
-    Allows to count the sequences and label each timestep
+    Allows to count the sequences and label each timestep.
 
     Parameters:
     -----------
@@ -84,7 +84,7 @@ def from_distance_to_sequences_vector(vector, min_timesteps: int = 3, ignore_bre
     min_timestep : int, optional
         Minimum number of consecutive timesteps to consider a sequence. Default is 3.
     ignore_break : int, optional
-        Number of consecutive NaNs allowed before breaking a sequence. Default is 0.
+        Number of consecutive NaNs or 0 allowed before breaking a sequence. Default is 2.
 
     Returns:
     --------
@@ -112,14 +112,32 @@ def from_distance_to_sequences_vector(vector, min_timesteps: int = 3, ignore_bre
     # Handle any remaining sequence at the end
     if sequence_start is not None and len(vector) - sequence_start >= min_timesteps:
         sequence_vec[sequence_start:] = sequence_id
-
+    #TODO
+    # Optimize the performance, quite slow : should be farily simple.
     return sequence_vec
 
 def from_distances_to_sequences_stack(stack, axis: int =0,min_timesteps : int =3, ignore_break=2):
     """
-    Function that takes a stack of numpy array of distances or RSSI signal for several
-    timesteps and returns a stack annotated with sequence IDs.
-    Allows to count the sequences and label each timestep for each cow
+    Function that takes a 3D numpy array of distances or RSSI signal for several
+    timesteps and returns a 3D numpy array annotated with sequence IDs.
+    Allows to count the sequences and label each timestep.
+    Applies the function from_distances_to_sequences_vector in the whole stack
+
+    Parameters:
+    -----------
+    stack : np.ndarray
+        3D array of distances or signal values.
+    axis : int
+        Axis for which the sequences are represented. Default is 0, according to our data.
+    min_timestep : int, optional
+        Minimum number of consecutive timesteps to consider a sequence. Default is 3.
+    ignore_break : int, optional
+        Number of consecutive NaNs or 0 allowed before breaking a sequence. Default is 2.
+
+    Returns:
+    --------
+    np.ndarray
+        3D array with annotated sequence IDs.
     """
 
     matrice_seq = np.apply_along_axis(
@@ -129,37 +147,73 @@ def from_distances_to_sequences_stack(stack, axis: int =0,min_timesteps : int =3
     )
     return matrice_seq
 
+def from_stack_to_number_of_interaction_sequences(
+        matrice : np.ndarray
+        ) -> np.ndarray:
+    """
+    Function that takes the array with annotated sequences for each timestep
+    (from from_distances_to_sequences_stack) and extracts the number of interactions
+    """
+    return np.nanmax(np.nan_to_num(matrice, nan=0), axis=0)
 
 def from_seq_to_average_interaction_time(matrice_seq, time_step :int =20):
+    """
+    Function that computes the average interaction time for each cow in minutes.
 
-    #Create a matrix that counts the total interactions :
+    Parameters:
+    -----------
+    matrice_seq : np.ndarray
+        3D array with the sequences annotated for each timestep.
+        Output of from_distances_to_sequences_stack
+    timestep : int,
+        Duration of one timestep = the parameter used in the smoothing operation during the preprocessing.
+
+    Returns:
+    --------
+    np.ndarray
+        1D array with an average interaction time for each cow.
+    """
+    #Create a matrix that counts the total time cows interacted within an interaction:
     matrice_binary = np.where(np.isnan(matrice_seq), 0, 1)
     interaction_counts= np.sum(matrice_binary, axis=0) # 2D array cows x cows
     interaction_counts_cowwise = np.sum(interaction_counts, axis =0) # 1D array cows
 
+    #Counts the number of interaction for each cows
     number_of_interaction_sequence = np.nansum(
-        np.nanmax(np.nan_to_num(matrice_seq, nan=0), axis=0), axis=0) # 1D array cows
+        from_stack_to_number_of_interaction_sequences(matrice_seq),
+        axis=0) # 1D array cows
 
-
+    #Averages the duration of an interaction
     total_time = interaction_counts_cowwise * time_step
     total_time_minutes = total_time / 60
-
 
     return total_time_minutes / number_of_interaction_sequence
 
 def from_seq_to_daily_interactions(matrice_seq,filtered_timestamps) :
+    """"
+    Function that computes the average interaction time for each cow.
+    Sums all of the interaction one cow has with every other one.
+    Parameters:
+    -----------
+    matrice_seq : np.ndarray
+        3D array with the sequences annotated for each timestep.
+        Output of from_distances_to_sequences_stack
+    filtered_timestamps : list
+        list of pd.TimeStamps corresponding to the timestamps from the matrice_seq
+
+    Returns:
+    --------
+    np.ndarray
+        1D array with an average interaction time for each cow.
+    """
+    # Counts the number of days in the data
     unique_days = pd.to_datetime(filtered_timestamps).normalize().unique()
     num_days = len(unique_days)
-    number_of_sequence = np.nanmax(np.nan_to_num(matrice_seq, nan=0), axis=0)
+
+    # Number of interactions for each couple of cows
+    number_of_sequence = from_stack_to_number_of_interaction_sequences(matrice_seq)
+
+    #Number of interaction cowwise averaged for the total duration
     daily_interactions_per_cow = np.nansum(number_of_sequence, axis=0) / num_days
 
     return daily_interactions_per_cow
-
-
-def from_stack_to_number_of_interaction_sequences(
-        matrice : np.ndarray
-        ) -> np.ndarray: 
-    """
-    
-    """
-    return np.nanmax(np.nan_to_num(matrice, nan=0), axis=0)
