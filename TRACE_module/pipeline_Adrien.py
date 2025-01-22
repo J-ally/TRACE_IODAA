@@ -98,32 +98,29 @@ t5=time.perf_counter()
 #start_time = pd.Timestamp('2024-03-20T08:39:00.000000000')
 #end_time = pd.Timestamp('2024-04-10T16:36:00.000000000')
 
+#New timestamps without any bagtime
 start_time = pd.Timestamp('2024-03-22T08:39:00.000000000')
 end_time = pd.Timestamp('2024-04-8T16:36:00.000000000')
 
 
-stack,list_timesteps=pp.crop_start_end_stack(stack=stack,
+distances_clean,list_timesteps=pp.crop_start_end_stack(stack=stack,
                          list_timesteps = list_timesteps ,
                          start = start_time,
                          end = end_time)
 
 ###
 
-distances_clean=stack
 t5b=time.perf_counter()
-#####
-#print(distances_clean[0 ,:, : ])
-print(distances_clean.shape)
+###
+
 
 distances_clean=np.where(distances_clean==0,np.nan,distances_clean)
 ## Creation a a sequence matrix
 matrice_seq = from_distances_to_sequences_stack(distances_clean)
 
-###
+##Computing relevent number from the sequence matrix
 
 number_of_interaction_sequences = from_stack_to_number_of_interaction_sequences(matrice_seq)
-
-
 number_of_daily_interaction = from_seq_to_daily_interactions(matrice_seq,list_timesteps)
 average_duration_of_an_interaction = from_seq_to_average_interaction_time(matrice_seq)
 
@@ -133,16 +130,15 @@ t6=time.perf_counter()
 #Visualisation#
 #####################
 
-
+# Heatmap for the number of intercations couple wise
 vi.heatmap_interactions_number(number_of_interaction_sequences,list_id)
 
 
-## PLotting the double boxplot :
+## PLotting the double boxplot for each cows : number of interaction and avearge time:
 
-# Create the figure and axis
 vi.barplot_interaction_cows(number_of_daily_interaction,average_duration_of_an_interaction ,list_id)
 
-print("--BENCHMArk-- \n ==========\n étape 1 - localisation des données: {} \n étape 2 - concaténation des fichiers et création d'un dataframe unique ': {} \n étape 3 -transformation des signaux RSSI en distance {} \n étape 4 - Mise en forme des données sous forme matricielle: {} \n étape 5 : Analyse descriptive :{} ".format(t2-t1,t3-t2,t4-t3,t5-t4,t6-t5))
+## All around boxplot
+vi.boxplot_average_time_number_interactions(number_of_daily_interaction, average_duration_of_an_interaction)
 
-vi.boxplot_average_time_number_interactions(number_of_daily_interaction,
-                                             average_duration_of_an_interaction)
+print("--BENCHMArk-- \n ==========\n étape 1 - localisation des données: {} \n étape 2 - concaténation des fichiers et création d'un dataframe unique ': {} \n étape 3 -transformation des signaux RSSI en distance {} \n étape 4 - Mise en forme des données sous forme matricielle: {} \n étape 5 : Analyse descriptive :{} ".format(t2-t1,t3-t2,t4-t3,t5-t4,t6-t5))
