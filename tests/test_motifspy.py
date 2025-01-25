@@ -11,7 +11,7 @@ import sys
 
 sys.path.insert(1, '/Users/bouchet/Documents/Cours/Cours /AgroParisTech /3A/IODAA/PFR/TRACE_IODAA')
 
-from TRACE_module.preprocessing import create_stack
+from TRACE_module.preprocessing import *
 from UTILS_module.create_data import create_test_data
 from TRACE_module import motif as m
 
@@ -20,7 +20,7 @@ def test_list_interaction() :
     list_id=["a","b","c","d","e"]
     
     df=create_test_data(-65)[0]
-    stack,time_steps=create_stack(df,list_id)
+    stack,time_steps=pp.create_stack(df,list_id)
     
     l1=m.get_list_interactions(stack,list_id,time_steps)
     
@@ -36,4 +36,5 @@ def test_list_interaction() :
         len_exprected=2*len(time_steps+1)-1
     print(len(l1),len_expected)
     assert len(l1)==len_expected, 'la longueur de la liste ne correspond pas à la longueur attendue' 
+    
     

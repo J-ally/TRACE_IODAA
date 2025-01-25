@@ -108,37 +108,62 @@ distances_clean,list_timesteps=pp.crop_start_end_stack(stack=stack,
                          start = start_time,
                          end = end_time)
 
-###
+# ###
 
 t5b=time.perf_counter()
-###
+# ###
 
 
-distances_clean=np.where(distances_clean==0,np.nan,distances_clean)
-## Creation a a sequence matrix
-matrice_seq = from_distances_to_sequences_stack(distances_clean)
+# distances_clean=np.where(distances_clean==0,np.nan,distances_clean)
+# ## Creation a a sequence matrix
+# matrice_seq = from_distances_to_sequences_stack(distances_clean)
 
-##Computing relevent number from the sequence matrix
+# ##Computing relevent number from the sequence matrix
 
-number_of_interaction_sequences = from_stack_to_number_of_interaction_sequences(matrice_seq)
-number_of_daily_interaction = from_seq_to_daily_interactions(matrice_seq,list_timesteps)
-average_duration_of_an_interaction = from_seq_to_average_interaction_time(matrice_seq)
+# number_of_interaction_sequences = from_stack_to_number_of_interaction_sequences(matrice_seq)
+# number_of_daily_interaction = from_seq_to_daily_interactions(matrice_seq,list_timesteps)
+# average_duration_of_an_interaction = from_seq_to_average_interaction_time(matrice_seq)
 
 t6=time.perf_counter()
 
-#####################
-#Visualisation#
-#####################
+# #####################
+# #Visualisation#
+# #####################
 
-# Heatmap for the number of intercations couple wise
-vi.heatmap_interactions_number(number_of_interaction_sequences,list_id)
+# # Heatmap for the number of intercations couple wise
+# vi.heatmap_interactions_number(number_of_interaction_sequences,list_id)
 
 
-## PLotting the double boxplot for each cows : number of interaction and avearge time:
+# ## PLotting the double boxplot for each cows : number of interaction and avearge time:
 
-vi.barplot_interaction_cows(number_of_daily_interaction,average_duration_of_an_interaction ,list_id)
+# vi.barplot_interaction_cows(number_of_daily_interaction,average_duration_of_an_interaction ,list_id)
 
-## All around boxplot
-vi.boxplot_average_time_number_interactions(number_of_daily_interaction, average_duration_of_an_interaction)
+# ## All around boxplot
+# vi.boxplot_average_time_number_interactions(number_of_daily_interaction, average_duration_of_an_interaction)
 
-print("--BENCHMArk-- \n ==========\n étape 1 - localisation des données: {} \n étape 2 - concaténation des fichiers et création d'un dataframe unique ': {} \n étape 3 -transformation des signaux RSSI en distance {} \n étape 4 - Mise en forme des données sous forme matricielle: {} \n étape 5 : Analyse descriptive :{} ".format(t2-t1,t3-t2,t4-t3,t5-t4,t6-t5))
+
+t7=time.perf_counter()
+###################################################################
+#ETAPE 7 - Recherche de motifs / Apriori                          #
+###################################################################
+
+
+d=pp.stack_to_one_hot_df(distances_clean, list_id)
+
+motifs=pp.apriori_(d, 0.00001, 5)
+
+t8=time.perf_counter()
+
+motifs=pp.get_maximum_connex_graph(motifs)
+
+
+t9=time.perf_counter()
+
+
+
+###################################################################
+#Benchmarks                                                       #
+###################################################################
+
+print("--BENCHMArk-- \n ==========\n étape 1 - localisation des données: {} \n étape 2 - concaténation des fichiers et création d'un dataframe unique ': {} \n étape 3 -transformation des signaux RSSI en distance {} \n étape 4 - Mise en forme des données sous forme matricielle: {} \n étape 5 : Analyse descriptive :{} \n étape 6 : Extraction de motifs par Apriori :{} \n étape 7 : extraction composante connexe maximale :{}".format(t2-t1,t3-t2,t4-t3,t5-t4,t6-t5, t8-t7,t9-t8))
+
