@@ -99,9 +99,10 @@ t5=time.perf_counter()
 #end_time = pd.Timestamp('2024-04-10T16:36:00.000000000')
 
 #New timestamps without any bagtime
-start_time = pd.Timestamp('2024-03-22T08:39:00.000000000')
-end_time = pd.Timestamp('2024-04-8T16:36:00.000000000')
-
+# start_time = pd.Timestamp('2024-03-22T08:39:00.000000000')
+# end_time = pd.Timestamp('2024-04-8T16:36:00.000000000')
+start_time = pd.Timestamp('2024-10-16T15:00:00.000000000')
+end_time = pd.Timestamp('2024-10-29T06:00:00.000000000')
 
 distances_clean,list_timesteps=pp.crop_start_end_stack(stack=stack,
                          list_timesteps = list_timesteps ,
@@ -140,7 +141,7 @@ t6=time.perf_counter()
 
 # ## All around boxplot
 # vi.boxplot_average_time_number_interactions(number_of_daily_interaction, average_duration_of_an_interaction)
-
+print("ok")
 
 t7=time.perf_counter()
 ###################################################################
@@ -150,7 +151,7 @@ t7=time.perf_counter()
 
 d=pp.stack_to_one_hot_df(distances_clean, list_id)
 
-motifs=pp.apriori_(d, 0.00001, 5)
+motifs=pp.apriori_(d, 0.001, 4)
 
 t8=time.perf_counter()
 
@@ -160,8 +161,10 @@ motifs=pp.get_maximum_connex_graph(motifs)
 t9=time.perf_counter()
 
 
-
-###################################################################
+a=vi.proba_interaction_motif_along_time(motifs.iloc[0]["itemsets"],distances_clean,list_id,list_timesteps)
+vi.proba_interaction_motif_along_time(motifs.iloc[1]["itemsets"],distances_clean,list_id,list_timesteps)
+vi.proba_interaction_motif_along_time(motifs.iloc[2]["itemsets"],distances_clean,list_id,list_timesteps)
+# ###################################################################
 #Benchmarks                                                       #
 ###################################################################
 

@@ -241,7 +241,7 @@ def apriori_(df : pd.DataFrame,
              min_support : float,
              min_number : int) -> pd.DataFrame:
     
-    motifs=apriori(df,min_support=min_support,use_colnames=True)
+    motifs=apriori(df,min_support=min_support,use_colnames=True,low_memory=True)
     filtered_motifs=motifs[motifs['itemsets'].apply(len)>=min_number].reset_index()
     
     filtered_motifs.sort_values(by="support",ascending=False,inplace=True)
