@@ -276,16 +276,82 @@ def get_maximum_connex_graph(dataframe : pd.DataFrame) -> pd.DataFrame:
     """
     
     dataframe["motif_connexe_maximum"]=dataframe["itemsets"].apply(apply_sousgraph_connexe_maximum)
-        
+    dataframe['longueur_graph_connex'] = dataframe['motif_connexe_maximum'].apply(len)
+    
+    dataframe.sort_values(by="longueur_graph_connex",inplace=True,ascending=False)
+    
     return dataframe
         
     
     
-    
-    
+
     
         
+def transform_table_to_SPADE(
+        dataframe,
+        C=60
         
+        )  : 
+    
+    """
+    On fait une fenetre de C ligne ( exmple : lissage 60 s, 1h de fenetre --< c=60) 
+    
+    
+    """
+    df=pd.DataFrame({"seq_id" : [], "sequence" : [] })
+    id_max=int(0)
+    c=0
+    l=list()
+    for index,row in dataframe.iterrows() : 
+      
+        if index%C == 0 : 
+            
+          
+            if id_max != 0: 
+                df=pd.concat([df,pd.DataFrame({"seq_id" : [id_max], "sequence" : [l] })])
+                l =[row[row == True].index] 
+                id_max+=1
+             
+            else : 
+                l =[row[row == True].index] 
+                id_max+=1
+            
+        else : 
+            l.append(list(row[row == True].index)) 
+            
+    return df
+            
+            
+
+def transform_df_to_txt(df,list_id) : 
+    
+    dict_id=dict() 
+    c=1
+    for i in list_id : 
+        for j in list_id : 
+            dict_id["{}_{}".format(i,j)] = c
+            c+=1
+    return dict_id
+        
+        
+    txt=str()
+    for index,row in df.iterrows() : 
+        l=row["sequence"]
+        for itemset in l : 
+            for item in itemset : 
+                
+                txt += str(dict_id[item]) + " "
+            txt += "-1 " 
+            
+        txt+="\n"
+    with open("/Users/bouchet/Documents/Cours/Cours /AgroParisTech /3A/IODAA/PFR/TRACE_IODAA/savings/Output.txt", "w") as text_file:
+        text_file.write(txt)
+    
+        
+            
+        
+        
+    
 
 
                     

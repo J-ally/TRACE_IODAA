@@ -209,11 +209,11 @@ def proba_interaction_motif_along_time( motif : frozenset,
     masque=np.full(stack.shape[1:3], 0)
     for i in motif : 
         masque[list_id.index(i.split("_")[0]),list_id.index(i.split("_")[1])]=1
-    print(motif,masque)    
+      
     bool_vecteur = []
     for i in range(stack.shape[0]):
         bool_vecteur.append(np.array_equal(stack[i] & masque, masque)) 
-    print("True  :", bool_vecteur.count(True))
+   
     bool_vecteur = np.array(bool_vecteur)
     
         
@@ -238,4 +238,52 @@ def proba_interaction_motif_along_time( motif : frozenset,
     )
     print(plot)
     return result
+    
+
+def proba_interaction_motif_along_time_2( motif : frozenset, 
+                                       stack : np.ndarray, 
+                                       list_id : list[str], 
+                                       list_timesteps
+                                       ) -> None: 
+    
+    """
+    
+    
+    
+    """
+    
+    interaction_vector=np.full(stack.shape[0],0)
+    
+    masque=np.full(stack.shape[1:3], 0)
+    for i in motif : 
+        masque[list_id.index(i.split("_")[0]),list_id.index(i.split("_")[1])]=1
+      
+    bool_vecteur = []
+    for i in range(stack.shape[0]):
+        bool_vecteur.append(np.array_equal(stack[i] & masque, masque)) 
+   
+    bool_vecteur = np.array(bool_vecteur)
+    
+        
+    df = pd.DataFrame({
+        'timestamp': list_timesteps,
+        'is_true': bool_vecteur
+    })
+    
+    # Extraire heure::minute comme nouvelle colonne
+    df['time'] = df['timestamp'].dt.strftime('%H:%M')
+    df['day']=df['timestamp'].dt.strftime('%d')
+    
+    
+    
+    # Renommer les colonnes pour correspondre au résultat attendu
+   
+    df["time"]=df["time"].astype('<M8[ns]')
+    #df["day"]=df["day"].astype('<M8[ns]')
+    plot=(
+    ggplot(df,aes(x="time",y="is_true",color="day")) + geom_line() 
+    
+    #+ scale_x_discrete(breaks=range(0, 24, 2))
+    )
+    print(plot)
     
