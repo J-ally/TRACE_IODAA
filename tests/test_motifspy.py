@@ -11,7 +11,7 @@ import sys
 
 sys.path.insert(1, '/Users/bouchet/Documents/Cours/Cours /AgroParisTech /3A/IODAA/PFR/TRACE_IODAA')
 
-from TRACE_module.preprocessing import *
+import  TRACE_module.preprocessing as pp
 from UTILS_module.create_data import create_test_data
 from TRACE_module import motif as m
 

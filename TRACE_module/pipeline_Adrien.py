@@ -70,7 +70,7 @@ folder_savings =  os.sep.join([output_dir,"savings"])
 if not  os.path.isdir(folder_savings) :
     os.makedirs(folder_savings)
 
-data=pp.concatenate_df(list_files)
+data=pp.concatenate_df(list_files,smooth_time='60s')
 
 ##########################################
 #ETAPE 3 -Transformation RSSI en distance#
@@ -101,8 +101,13 @@ t5=time.perf_counter()
 #New timestamps without any bagtime
 # start_time = pd.Timestamp('2024-03-22T08:39:00.000000000')
 # end_time = pd.Timestamp('2024-04-8T16:36:00.000000000')
+
+
+###BUISSON
 start_time = pd.Timestamp('2024-10-16T15:00:00.000000000')
 end_time = pd.Timestamp('2024-10-29T06:00:00.000000000')
+
+
 
 distances_clean,list_timesteps=pp.crop_start_end_stack(stack=stack,
                          list_timesteps = list_timesteps ,
@@ -164,6 +169,11 @@ t9=time.perf_counter()
 a=vi.proba_interaction_motif_along_time(motifs.iloc[0]["itemsets"],distances_clean,list_id,list_timesteps)
 vi.proba_interaction_motif_along_time(motifs.iloc[1]["itemsets"],distances_clean,list_id,list_timesteps)
 vi.proba_interaction_motif_along_time(motifs.iloc[2]["itemsets"],distances_clean,list_id,list_timesteps)
+
+
+a=vi.proba_interaction_motif_along_time_2(motifs.iloc[0]["itemsets"],distances_clean,list_id,list_timesteps)
+vi.proba_interaction_motif_along_time_2(motifs.iloc[1]["itemsets"],distances_clean,list_id,list_timesteps)
+vi.proba_interaction_motif_along_time_2(motifs.iloc[2]["itemsets"],distances_clean,list_id,list_timesteps)
 # ###################################################################
 #Benchmarks                                                       #
 ###################################################################
