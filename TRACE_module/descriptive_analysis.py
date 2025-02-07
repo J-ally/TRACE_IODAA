@@ -71,6 +71,28 @@ def rank_accelero_by_sensor(
 
 
 
+def sort_stack_by_timesteps(stack: np.ndarray, list_timesteps: np.array) -> tuple[np.ndarray, np.array]:
+    """
+    Sorts the stack and timesteps to ensure they are in chronological order.
+
+    Args:
+    - stack (np.ndarray): A 3D NumPy array of shape (T, N, N), where T is the number of timesteps.
+    - list_timesteps (np.array): A 1D NumPy array of shape (T,) containing unsorted timestamps.
+
+    Returns:
+    - tuple: (sorted_stack, sorted_list_timesteps)
+    """
+
+    # Get sorted indices based on timestamps
+    sorted_indices = np.argsort(list_timesteps)
+
+    # Sort both stack and list_timesteps using the same order
+    sorted_stack = stack[sorted_indices]
+    sorted_list_timesteps = list_timesteps[sorted_indices]
+
+    return sorted_stack, sorted_list_timesteps
+
+
 def from_distance_to_sequences_vector(vector, min_timesteps: int = 3, ignore_break: int = 2):
     """
     Function that takes a 1D numpy array of distances or RSSI signal for several
@@ -165,7 +187,7 @@ def from_seq_to_average_interaction_time(matrice_seq, time_step :int =20):
     matrice_seq : np.ndarray
         3D array with the sequences annotated for each timestep.
         Output of from_distances_to_sequences_stack
-    timestep : int,
+    time_step : int,
         Duration of one timestep = the parameter used in the smoothing operation during the preprocessing.
 
     Returns:
@@ -183,10 +205,14 @@ def from_seq_to_average_interaction_time(matrice_seq, time_step :int =20):
         from_stack_to_number_of_interaction_sequences(matrice_seq),
         axis=0) # 1D array cows
 
+    # Replace zeros with NaN to avoid division errors
+    number_of_interaction_sequence[number_of_interaction_sequence == 0] = np.nan
+
     #Averages the duration of an interaction
     total_time = interaction_counts_cowwise * time_step
     total_time_minutes = total_time / 60
-
+    print (total_time_minutes)
+    print(number_of_interaction_sequence)
     return total_time_minutes / number_of_interaction_sequence
 
 def from_seq_to_daily_interactions(matrice_seq,filtered_timestamps) :
