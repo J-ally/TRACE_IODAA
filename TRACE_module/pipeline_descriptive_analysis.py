@@ -5,7 +5,7 @@
 import preprocessing as pp
 
 import visualisation as vi
-from descriptive_analysis import from_stack_to_number_of_interaction_sequences,from_distance_to_sequences_vector, from_distances_to_sequences_stack,from_seq_to_average_interaction_time,from_seq_to_daily_interactions
+from descriptive_analysis import from_stack_to_number_of_interaction_sequences, sort_stack_by_timesteps, from_distance_to_sequences_vector, from_distances_to_sequences_stack,from_seq_to_average_interaction_time,from_seq_to_daily_interactions
 
 import numpy as np
 import os
@@ -40,22 +40,25 @@ import preprocessing as pp
 ###############################################################################
 
 ####### SET FILES VARIABLES ##########
-folder= '/Users/elise/code/TRACE_IODAA/data/data_rssi/Data_rssi_glob_sensor_time_blavet'
+folder= 'data/data_rssi/20240319 - Cordemais/Data_rssi_glob_sensor_time'
 list_files=list()
+recolte = 'cordemais'
+
+
 
 #### SET TIME VARIABLES FOR CROPPING######
 
-### For Cordemais :
-# start_time = pd.Timestamp('2024-03-22')
-# end_time = pd.Timestamp('2024-04-08')
+if recolte == 'cordemais' :
+    start_time = pd.Timestamp('2024-03-22')
+    end_time = pd.Timestamp('2024-04-08')
 
-### For Buisson :
-#start_time = pd.Timestamp('2024-10-17')
-#end_time = pd.Timestamp('2024-10-29')
+elif recolte == 'buisson' :
+    start_time = pd.Timestamp('2024-10-18')
+    end_time = pd.Timestamp('2024-10-28')
 
-### For Blavet :
-start_time = pd.Timestamp('2024-07-27')
-end_time = pd.Timestamp('2024-08-13')
+elif recolte == 'blavet' :
+    start_time = pd.Timestamp('2024-07-28')
+    end_time = pd.Timestamp('2024-08-12')
 
 
 
@@ -95,7 +98,8 @@ t4=time.perf_counter()
 list_id=list(pd.unique(data["accelero_id"]))
 
 
-stack,list_timesteps=pp.create_stack(data,list_id)
+stack_raw,list_timesteps_raw =pp.create_stack(data,list_id)
+stack, list_timesteps = sort_stack_by_timesteps(stack_raw,list_timesteps_raw)
 t5=time.perf_counter()
 
 ###################################################################
@@ -129,16 +133,32 @@ t6=time.perf_counter()
 # #Visualisation#
 # #####################
 
-# Heatmap for the number of intercations couple wise
-vi.heatmap_interactions_number(number_of_interaction_sequences,list_id)
 
+downloads_path = os.path.expanduser("~/Downloads")
+folder_path = os.path.join(downloads_path, recolte)
 
-## PLotting the double boxplot for each cows : number of interaction and avearge time:
+# Create the folder if it does not exist
+os.makedirs(folder_path, exist_ok=True)
 
-vi.barplot_interaction_cows(number_of_daily_interaction,average_duration_of_an_interaction ,list_id)
+figure_counter = 1  # Counter for naming figures
 
-## All around boxplot
-vi.boxplot_average_time_number_interactions(number_of_daily_interaction, average_duration_of_an_interaction)
+# Generate and save Heatmap
+fig1 = vi.heatmap_interactions_number(number_of_interaction_sequences, list_id)
+vi.save_figure(fig1, folder_path, figure_counter)
+figure_counter += 1
 
+# Generate and save Barplot (combined)
+fig2 = vi.barplot_interaction_cows(number_of_daily_interaction, average_duration_of_an_interaction, list_id)
+vi.save_figure(fig2, folder_path, figure_counter)
+figure_counter += 1
 
-t7=time.perf_counter()
+# Generate and save Barplots (separate)
+fig3 = vi.barplot_interaction_cows_separate(number_of_daily_interaction, average_duration_of_an_interaction, list_id)
+vi.save_figure(fig3, folder_path, figure_counter)
+figure_counter += 1
+
+# Generate and save Boxplot (all around)
+fig4 = vi.boxplot_average_time_number_interactions(number_of_daily_interaction, average_duration_of_an_interaction)
+vi.save_figure(fig4, folder_path, figure_counter)
+
+print(f"\nAll figures saved in: {folder_path}")
