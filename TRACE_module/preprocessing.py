@@ -6,7 +6,6 @@ Created on Fri Jan 17 23:03:45 2025
 @author: bouchet
 """
 
-
 import pandas as pd
 import os
 import numpy as np
@@ -17,6 +16,7 @@ from multiprocessing import Pool, cpu_count
 from itertools import combinations
 from mlxtend.frequent_patterns import apriori
 import networkx as nx
+
 
 def lissage_signal(
     smooth_time: str = "20s",
@@ -56,8 +56,6 @@ def lissage_signal(
     return smoothed_file
 
 
-
-
 def format_df_to_concatenation(file: str, smooth_time: str = "20s") -> pd.DataFrame:
     """
 
@@ -81,8 +79,6 @@ def format_df_to_concatenation(file: str, smooth_time: str = "20s") -> pd.DataFr
     return dataframe
 
 
-
-
 def concatenate_df(liste_files: list[str], smooth_time: str = "20s") -> pd.DataFrame:
     """
     Cette fonction prend en argument une liste de chemin fichiers parquets, les concatène, et retourne un DataFrame entier
@@ -92,11 +88,10 @@ def concatenate_df(liste_files: list[str], smooth_time: str = "20s") -> pd.DataF
     concatenated_df = pd.DataFrame()
     for file in liste_files:
         concatenated_df = pd.concat(
-            [concatenated_df, format_df_to_concatenation(file, smooth_time=smooth_time)])
+            [concatenated_df, format_df_to_concatenation(file, smooth_time=smooth_time)]
+        )
 
     return concatenated_df
-
-
 
 
 def transform_rssi_to_distance(
@@ -121,71 +116,53 @@ def transform_rssi_to_distance(
 
         return dataframe
 
+
 def create_stack(
-        dataframe : pd.DataFrame, 
-        list_id : list[str], 
-        distance_eval: str = "RSSI", 
-        symetrisation : bool=True, 
-        adjacence : bool=True, 
-        threshold : float=-65., 
-        
-        )  -> tuple((np.array, list[str])) :
-        
+    dataframe: pd.DataFrame,
+    list_id: list[str],
+    distance_eval: str = "RSSI",
+    symetrisation: bool = True,
+    adjacence: bool = True,
+    threshold: float = -65.0,
+) -> tuple((np.array, list[str])):
+    """ """
 
-        """
-        
-        
-        """
-        
-        id_to_index = {id_: idx for idx, id_ in enumerate(list_id)}
+    id_to_index = {id_: idx for idx, id_ in enumerate(list_id)}
 
-       
-        dataframe["row_idx"] = dataframe["accelero_id"].map(id_to_index)
-        dataframe["col_idx"] = dataframe["id_sensor"].map(id_to_index)
+    dataframe["row_idx"] = dataframe["accelero_id"].map(id_to_index)
+    dataframe["col_idx"] = dataframe["id_sensor"].map(id_to_index)
 
-       
-        nb_id = len(list_id)
-        list_timesteps = pd.unique(dataframe["glob_sensor_DateTime"])
-        
-        
+    nb_id = len(list_id)
+    list_timesteps = pd.unique(dataframe["glob_sensor_DateTime"])
 
-        
-        timestep_to_idx = {timestep: idx for idx, timestep in enumerate(list_timesteps)}
+    timestep_to_idx = {timestep: idx for idx, timestep in enumerate(list_timesteps)}
 
-       
-        timestep_indices = dataframe["glob_sensor_DateTime"].map(timestep_to_idx)
-        row_indices = dataframe["row_idx"].to_numpy()
-        col_indices = dataframe["col_idx"].to_numpy()
-        values = dataframe[distance_eval].to_numpy()
+    timestep_indices = dataframe["glob_sensor_DateTime"].map(timestep_to_idx)
+    row_indices = dataframe["row_idx"].to_numpy()
+    col_indices = dataframe["col_idx"].to_numpy()
+    values = dataframe[distance_eval].to_numpy()
+
+    stack = np.full((len(list_timesteps), nb_id, nb_id), np.nan)
+    stack[timestep_indices, row_indices, col_indices] = values
+
+    if symetrisation:
+        if distance_eval in ["RSSI"]:
+            stack = np.fmax(stack, stack.transpose(0, 2, 1))
+        else:
+            stack = np.fmin(stack, stack.transpose(0, 2, 1))
+    if adjacence:
+        if distance_eval in ["RSSI", "evaluated_distance"]:
+            stack = np.where(stack > threshold, 1, 0)
+
+    return stack, list_timesteps
 
 
+def crop_start_end_stack(
+    stack: np.ndarray, list_timesteps: pd.Series, start: pd.Timestamp, end: pd.Timestamp
+) -> tuple:
+    """
 
-        stack = np.full((len(list_timesteps), nb_id, nb_id), np.nan)
-        stack[timestep_indices, row_indices, col_indices] = values
 
-        if symetrisation : 
-            if distance_eval in ["RSSI"] : 
-                 stack=np.fmax(stack,stack.transpose(0,2,1)) 
-            else :
-                stack=np.fmin(stack,stack.transpose(0,2,1)) 
-        if adjacence: 
-            if distance_eval in ["RSSI", "evaluated_distance"] : 
-                
-                stack=np.where(stack > threshold, 1,0 )
-                
-        return stack,list_timesteps           
-   
-    
-   
-    
-def crop_start_end_stack(stack  : np.ndarray, 
-                         list_timesteps : pd.Series , 
-                         start : pd.Timestamp, 
-                         end : pd.Timestamp
-                        ) -> tuple:
-        """
-    
-    
 
     Parameters
     ----------
@@ -204,160 +181,9 @@ def crop_start_end_stack(stack  : np.ndarray,
         DESCRIPTION.
 
     """
-    
-        time_filter = (list_timesteps >= start) & (list_timesteps <= end)
-        filtered_timestamps = list_timesteps[time_filter]
-        stack_cropped = stack[time_filter]
-        
-        
-        return stack_cropped, filtered_timestamps
-    
-    
-    
-def stack_to_one_hot_df(stack : np.ndarray, 
-                        list_id : list[str]) -> pd.DataFrame: 
-    
-    """
-    
-    
-    """
-    
-    couples = ["_".join(couple) for couple in combinations(list_id, 2)]
-    df=pd.DataFrame(columns=couples)
-    
-    
-    
-    
-    for c in couples: 
-        idx=(list_id.index(c.split("_")[0]),list_id.index(c.split("_")[1]))
-   
-        df[c]=stack[:,*idx]
-        
-    return df.astype(bool)
 
+    time_filter = (list_timesteps >= start) & (list_timesteps <= end)
+    filtered_timestamps = list_timesteps[time_filter]
+    stack_cropped = stack[time_filter]
 
-
-def apriori_(df : pd.DataFrame,
-             min_support : float,
-             min_number : int) -> pd.DataFrame:
-    
-    motifs=apriori(df,min_support=min_support,use_colnames=True,low_memory=True)
-    filtered_motifs=motifs[motifs['itemsets'].apply(len)>=min_number].reset_index()
-    
-    filtered_motifs.sort_values(by="support",ascending=False,inplace=True)
-                                
-    return filtered_motifs
-
-
-
-def apply_sousgraph_connexe_maximum(x : frozenset) -> frozenset: 
-    
-    
-    """
-    renvoie les sommets de la plus grande composante connexe du motif
-    
-    """
-    
-    graph=nx.Graph() 
-    
-    for edge in x: 
-        n1,n2=edge.split("_")
-        graph.add_edge(n1,n2)
-    connected_components = nx.connected_components(graph)
-    largest_component_nodes = max(connected_components, key=len)
-    
-    return frozenset(largest_component_nodes)
-
-def get_maximum_connex_graph(dataframe : pd.DataFrame) -> pd.DataFrame:
-    
-    """
-    
-    
-    """
-    
-    dataframe["motif_connexe_maximum"]=dataframe["itemsets"].apply(apply_sousgraph_connexe_maximum)
-    dataframe['longueur_graph_connex'] = dataframe['motif_connexe_maximum'].apply(len)
-    
-    dataframe.sort_values(by="longueur_graph_connex",inplace=True,ascending=False)
-    
-    return dataframe
-        
-    
-    
-
-    
-        
-def transform_table_to_SPADE(
-        dataframe,
-        C=60
-        
-        )  : 
-    
-    """
-    On fait une fenetre de C ligne ( exmple : lissage 60 s, 1h de fenetre --< c=60) 
-    
-    
-    """
-    df=pd.DataFrame({"seq_id" : [], "sequence" : [] })
-    id_max=int(0)
-    c=0
-    l=list()
-    for index,row in dataframe.iterrows() : 
-      
-        if index%C == 0 : 
-            
-          
-            if id_max != 0: 
-                df=pd.concat([df,pd.DataFrame({"seq_id" : [id_max], "sequence" : [l] })])
-                l =[row[row == True].index] 
-                id_max+=1
-             
-            else : 
-                l =[row[row == True].index] 
-                id_max+=1
-            
-        else : 
-            l.append(list(row[row == True].index)) 
-            
-    return df
-            
-            
-
-def transform_df_to_txt(df,list_id) : 
-    
-    dict_id=dict() 
-    c=1
-    for i in list_id : 
-        for j in list_id : 
-            dict_id["{}_{}".format(i,j)] = c
-            c+=1
-    return dict_id
-        
-        
-    txt=str()
-    for index,row in df.iterrows() : 
-        l=row["sequence"]
-        for itemset in l : 
-            for item in itemset : 
-                
-                txt += str(dict_id[item]) + " "
-            txt += "-1 " 
-            
-        txt+="\n"
-    with open("/Users/bouchet/Documents/Cours/Cours /AgroParisTech /3A/IODAA/PFR/TRACE_IODAA/savings/Output.txt", "w") as text_file:
-        text_file.write(txt)
-    
-        
-            
-        
-        
-    
-
-
-                    
-    
-
-
-
-
-            
+    return stack_cropped, filtered_timestamps
