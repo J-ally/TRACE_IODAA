@@ -243,3 +243,177 @@ def from_seq_to_daily_interactions(matrice_seq,filtered_timestamps) :
     daily_interactions_per_cow = np.nansum(number_of_sequence, axis=0) / num_days
 
     return daily_interactions_per_cow
+
+### Social environment analysis ###
+
+def compute_neighbors_per_timestep(stack: np.ndarray, timesteps: list, ids: list, threshold: float) -> pd.DataFrame:
+    """
+    Converts a stack of matrices into adjacency matrices using a threshold, then computes the number of neighbors
+    for each ID at each timestep.
+
+    Parameters:
+    -----------
+    stack : np.ndarray
+        3D array (T x N x N), where T is the number of timesteps, and N is the number of IDs.
+    timesteps : list
+        List of timesteps corresponding to each matrix.
+    ids : list
+        List of IDs corresponding to rows/columns of matrices.
+    threshold : float
+        Value above which two elements are considered connected (binary adjacency matrix).
+
+    Returns:
+    --------
+    pd.DataFrame
+        DataFrame where rows are timesteps, columns are IDs, and values are the number of neighbors per ID.
+    """
+    # Check consistency
+    assert stack.shape[0] == len(timesteps), "Mismatch between stack and timesteps length"
+    assert stack.shape[1] == stack.shape[2] == len(ids), "Mismatch between matrix size and IDs length"
+
+    # Dictionary to store results
+    neighbors_data = {id_: [] for id_ in ids}
+
+    for t_idx, timestep in enumerate(timesteps):
+        # Convert to adjacency matrix using threshold
+        adjacency_matrix = (stack[t_idx] > threshold).astype(int)
+        np.fill_diagonal(adjacency_matrix, 0)  # No self-connections
+
+        # Compute neighbors (sum of ones per row)
+        neighbors_count = np.sum(adjacency_matrix, axis=1)
+
+        # Store results
+        for id_idx, id_ in enumerate(ids):
+            neighbors_data[id_].append(neighbors_count[id_idx])
+
+    # Create DataFrame with timesteps as index
+    df_neighbors = pd.DataFrame(neighbors_data, index=timesteps)
+
+    return df_neighbors
+
+def compute_time_spent_with_neighbors(df_neighbors: pd.DataFrame) -> pd.DataFrame:
+    time_spent = {}
+    """
+    Converts the number of neighbors for each ID at each timesteps into a DataFrame that has the time spent with a
+    certain number of neighbours.
+
+    Parameters:
+    -----------
+   df_neighbours : pd.DataFrame
+        DataFrame where rows are timesteps, columns are IDs, and values are the number of neighbors per ID.
+
+    Returns:
+    --------
+    pd.DataFrame
+        DataFrame where rows are timesteps, columns are IDs, and values are the number of neighbors per ID.
+    """
+
+    for cow_id in df_neighbors.columns:
+        # Count occurrences of each neighbor count for the cow
+        neighbor_counts = df_neighbors[cow_id].value_counts().sort_index()
+
+        # Aggregate time spent in hours
+        time_spent[cow_id] = (neighbor_counts * 20) / 3600
+
+        # Merge all values >=5 into a "5+ neighbors" category
+        if any(neighbor_counts.index >= 5):
+            time_spent[cow_id].loc[5] = time_spent[cow_id].loc[neighbor_counts.index >= 5].sum()
+            time_spent[cow_id] = time_spent[cow_id].drop(neighbor_counts.index[neighbor_counts.index > 5], errors="ignore")
+
+    # Convert to DataFrame, fill missing values with 0, and drop the 0 neighbors category
+    return pd.DataFrame(time_spent).fillna(0).drop(index=0, errors="ignore").sort_index()
+
+def plot_time_spent_with_neighbors(df_neighbors: pd.DataFrame, place: str, use_percentage: bool=True):
+    """
+    Function to visualize time spent with neighbors in either absolute hours or percentage of data collection duration.
+
+    Parameters:
+    df_neighbors (DataFrame): Time series data of neighbor counts per cow.
+    place (str): Location title for the plot.
+    use_percentage (bool): If True, plots time in percentage, otherwise in absolute hours.
+
+    Returns:
+    fig (matplotlib.figure.Figure): The generated figure object.
+    """
+    # Compute time spent per number of neighbors (in hours, excluding 0)
+    time_spent_df = compute_time_spent_with_neighbors(df_neighbors)
+
+    # Compute total data collection duration in hours
+    data_collection_duration = (df_neighbors.index[-1] - df_neighbors.index[0]).total_seconds() / 3600
+
+    # Compute percentage of total data collection time for each cow
+    if use_percentage:
+        time_spent_df = (time_spent_df / data_collection_duration) * 100
+
+    # Number of cows
+    num_cows = len(df_neighbors.columns)
+
+    # Set up a 4-column grid for the plots (and as many rows as needed)
+    n_cols = 4
+    n_rows = (num_cows // n_cols) + (1 if num_cows % n_cols != 0 else 0)
+
+    # Create subplots
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(20, n_rows * 5))
+    fig.suptitle(f"Time Spent with Friends (Percentage) - {place}", fontsize=16)
+
+    # Flatten axes array for easy indexing
+    axes = axes.flatten()
+
+    # Plot for each cow in the grid
+    for i, cow_id in enumerate(df_neighbors.columns):
+        time_spent_df[cow_id].plot(kind="bar", color="cornflowerblue", ax=axes[i])
+        axes[i].set_xlabel("Number of Neighbors")
+        axes[i].set_ylabel("Percentage of Data Collection Duration (%)" if use_percentage else "Time Spent (hours)")
+        axes[i].set_title(f"Cow {cow_id}")
+        axes[i].tick_params(axis='x', rotation=0)
+        axes[i].grid(axis="y", linestyle="--", alpha=0.7)
+
+    # Hide any unused axes (if the number of cows is not a perfect multiple of 4)
+    for j in range(i + 1, len(axes)):
+        axes[j].axis("off")
+
+    # Adjust layout for better spacing
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
+
+    return fig
+
+
+def plot_neighbors_ts(df_neighbors:pd.DataFrame, cows:list, opacity:float=0.4):
+    """
+    Function to plot the number of neighbors over time for selected cows, grouped by day.
+
+    Parameters:
+    df_neighbors (DataFrame): Time series data of neighbor counts per cow.
+    cows (list): List of cow IDs to plot.
+    opacity (float) : opacity of the dots plotted for the time serie.
+
+    Returns:
+    figs (list): List of generated figure objects.
+    """
+    figs = []
+
+    # Ensure index is in datetime format
+    df_neighbors.index = pd.to_datetime(df_neighbors.index)
+
+    # Group by day
+    daily_groups = df_neighbors.groupby(df_neighbors.index.date)
+
+    # Plot for each day
+    for day, daily_data in daily_groups:
+        fig, ax = plt.subplots(figsize=(12, 6))
+
+        for cow in cows:
+            ax.scatter(daily_data.index, daily_data[cow], label=f'Cow {cow}', alpha=opacity)
+
+        ax.set_xlabel("Time")
+        ax.set_ylabel("Number of Neighbors")
+        ax.set_title(f"Number of Neighbors Over Time - {day}")
+        ax.legend()
+        ax.grid(True, linestyle="--", alpha=0.7)
+
+        # Format x-axis to show only hours
+        ax.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%H:%M'))
+
+        figs.append(fig)
+
+    return figs

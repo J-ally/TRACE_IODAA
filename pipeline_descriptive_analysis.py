@@ -2,10 +2,10 @@
 #                                 IMPORTS                                     #
 ###############################################################################
 
-import preprocessing as pp
+from TRACE_module import preprocessing as pp
+from TRACE_module import visualisation as vi
+from TRACE_module import descriptive_analysis as da
 
-import visualisation as vi
-from descriptive_analysis import from_stack_to_number_of_interaction_sequences, sort_stack_by_timesteps, from_distance_to_sequences_vector, from_distances_to_sequences_stack,from_seq_to_average_interaction_time,from_seq_to_daily_interactions
 
 import numpy as np
 import os
@@ -31,9 +31,6 @@ else :
 
 
 
-import preprocessing as pp
-
-
 
 ###############################################################################
 #                                 SCRIPTS                                     #
@@ -44,7 +41,8 @@ folder= 'data/data_rssi/20240319 - Cordemais/Data_rssi_glob_sensor_time'
 list_files=list()
 recolte = 'cordemais'
 
-
+#COws we want to select the st for vis
+sample_cows =
 
 #### SET TIME VARIABLES FOR CROPPING######
 
@@ -99,7 +97,7 @@ list_id=list(pd.unique(data["accelero_id"]))
 
 
 stack_raw,list_timesteps_raw =pp.create_stack(data,list_id)
-stack, list_timesteps = sort_stack_by_timesteps(stack_raw,list_timesteps_raw)
+stack, list_timesteps = da.sort_stack_by_timesteps(stack_raw,list_timesteps_raw)
 t5=time.perf_counter()
 
 ###################################################################
@@ -113,21 +111,28 @@ distances_clean,list_timesteps=pp.crop_start_end_stack(stack=stack,
 
 # ###
 
-t5b=time.perf_counter()
-# ###
+
 
 
 distances_clean=np.where(distances_clean==0,np.nan,distances_clean)
 ## Creation a a sequence matrix
-matrice_seq = from_distances_to_sequences_stack(distances_clean)
+matrice_seq = da.compute_neighbours_per_timestepfrom_distances_to_sequences_stack(distances_clean)
 
 ##Computing relevent number from the sequence matrix
 
-number_of_interaction_sequences = from_stack_to_number_of_interaction_sequences(matrice_seq)
-number_of_daily_interaction = from_seq_to_daily_interactions(matrice_seq,list_timesteps)
-average_duration_of_an_interaction = from_seq_to_average_interaction_time(matrice_seq)
+number_of_interaction_sequences = da.from_stack_to_number_of_interaction_sequences(matrice_seq)
+number_of_daily_interaction = da.from_seq_to_daily_interactions(matrice_seq,list_timesteps)
+average_duration_of_an_interaction = da.from_seq_to_average_interaction_time(matrice_seq)
 
-t6=time.perf_counter()
+### Social env :
+
+df_neighbors = da.compute_neighbours_per_timestep(stack= distances_clean,
+                                timesteps= list_timesteps,
+                                ids= list_id,
+                                threshold= -65)
+
+time_spent_df = da.compute_time_spent(df_neighbors)
+
 
 # #####################
 # #Visualisation#
@@ -160,5 +165,16 @@ figure_counter += 1
 # Generate and save Boxplot (all around)
 fig4 = vi.boxplot_average_time_number_interactions(number_of_daily_interaction, average_duration_of_an_interaction)
 vi.save_figure(fig4, folder_path, figure_counter)
+figure_counter += 1
+
+
+# Barblot of the time spent with a certain number of neighbors for each cows
+fig5 = da.plot_time_spent_with_neighbors(df_neighbors, place=recolte, use_percentage=True)
+vi.save_figure(fig5, folder_path,figure_counter)
+figure_counter += 1
+
+#PLot for selected cows the time series of their number of neighbors
+fig6 = da.plot_neighbors_ts(df_neighbors, cows= sample_cows)
+vi.save_figure(fig6,folder_path,figure_counter)
 
 print(f"\nAll figures saved in: {folder_path}")
