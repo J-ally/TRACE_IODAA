@@ -11,10 +11,11 @@ Created on Mon Jan 13 15:51:20 2025
 #                                 IMPORTS                                     #
 ###############################################################################
 
-import preprocessing as pp
+import TRACE_module.preprocessing as pp
 
-import visualisation as vi
-from descriptive_analysis import from_stack_to_number_of_interaction_sequences,from_distance_to_sequences_vector, from_distances_to_sequences_stack,from_seq_to_average_interaction_time,from_seq_to_daily_interactions
+import TRACE_module.visualisation as vi
+from TRACE_module.descriptive_analysis import from_stack_to_number_of_interaction_sequences,from_distance_to_sequences_vector, from_distances_to_sequences_stack,from_seq_to_average_interaction_time,from_seq_to_daily_interactions
+from TRACE_module.apriori_spade import stack_to_one_hot_df, get_maximum_connex_graph, apriori_
 
 import numpy as np
 import os
@@ -24,7 +25,7 @@ import matplotlib.pyplot as plt
 import dotenv
 import sys
 import time
-from env_loading import parent_dir, output_dir
+from TRACE_module.env_loading import parent_dir, output_dir
 
 if os.getcwd().endswith("TRACE_module"):
     new_path = os.getcwd()[:-len("TRACE_module")] + "UTILS_module"
@@ -40,7 +41,6 @@ else :
 
 
 
-import preprocessing as pp
 
 
 
@@ -70,69 +70,70 @@ folder_savings =  os.sep.join([output_dir,"savings"])
 if not  os.path.isdir(folder_savings) :
     os.makedirs(folder_savings)
 
-# data=pp.concatenate_df(list_files,smooth_time='60s')
+data=pp.concatenate_df(list_files,smooth_time='20s')
 
 # ##########################################
 # #ETAPE 3 -Transformation RSSI en distance#
 # ##########################################
 # t3=time.perf_counter()
 
-# #data=pp.transform_rssi_to_distance(data)
+data=pp.transform_rssi_to_distance(data)
 # t4=time.perf_counter()
 
 # ###################################################################
 # #ETAPE 5 - Création d'un stack de matrice d'adjacence symétriques #
 # ###################################################################
 
-# list_id=list(pd.unique(data["accelero_id"]))
+list_id=list(pd.unique(data["accelero_id"]))
 
 
-# stack,list_timesteps=pp.create_stack(data,list_id)
-# t5=time.perf_counter()
+stack,list_timesteps=pp.create_stack(data,list_id)
+t5=time.perf_counter()
 
-# ###################################################################
+# #########,##########################################################
 # #ETAPE 6- Analyses                                                #
 # ###################################################################
 
 
-# #start_time = pd.Timestamp('2024-03-20T08:39:00.000000000')
-# #end_time = pd.Timestamp('2024-04-10T16:36:00.000000000')
+#start_time = pd.Timestamp('2024-03-20T08:39:00.000000000')
+#end_time = pd.Timestamp('2024-04-10T16:36:00.000000000')
 
-# #New timestamps without any bagtime
-# # start_time = pd.Timestamp('2024-03-22T08:39:00.000000000')
-# # end_time = pd.Timestamp('2024-04-8T16:36:00.000000000')
-
-
-# ###BUISSON
-# start_time = pd.Timestamp('2024-10-16T15:00:00.000000000')
-# end_time = pd.Timestamp('2024-10-29T06:00:00.000000000')
+#New timestamps without any bagtime
+ #start_time = pd.Timestamp('2024-03-22T08:39:00.000000000')
+ #end_time = pd.Timestamp('2024-04-8T16:36:00.000000000')
 
 
-
-# distances_clean,list_timesteps=pp.crop_start_end_stack(stack=stack,
-#                          list_timesteps = list_timesteps ,
-#                          start = start_time,
-#                          end = end_time)
+###BUISSON
+start_time = pd.Timestamp('2024-10-18T15:00:00.000000000')
+end_time = pd.Timestamp('2024-10-27T06:00:00.000000000')
 
 
-# distances_clean=stack
-# # ###
 
-# t5b=time.perf_counter()
-# # ###
+distances_clean,list_timesteps=pp.crop_start_end_stack(stack=stack,
+                         list_timesteps = list_timesteps ,
+                         start = start_time,
+                         end = end_time)
 
 
-# # distances_clean=np.where(distances_clean==0,np.nan,distances_clean)
+#distances_clean=stack
+# ###
+
+t5b=time.perf_counter()
+# ##
+
+distances_clean=np.where(distances_clean==0,np.nan,distances_clean)
+
+
 # # ## Creation a a sequence matrix
-# # matrice_seq = from_distances_to_sequences_stack(distances_clean)
+matrice_seq = from_distances_to_sequences_stack(distances_clean)
 
 # # ##Computing relevent number from the sequence matrix
 
-# # number_of_interaction_sequences = from_stack_to_number_of_interaction_sequences(matrice_seq)
-# # number_of_daily_interaction = from_seq_to_daily_interactions(matrice_seq,list_timesteps)
-# # average_duration_of_an_interaction = from_seq_to_average_interaction_time(matrice_seq)
+# number_of_interaction_sequences = from_stack_to_number_of_interaction_sequences(matrice_seq)
+# number_of_daily_interaction = from_seq_to_daily_interactions(matrice_seq,list_timesteps)
+# average_duration_of_an_interaction = from_seq_to_average_interaction_time(matrice_seq)
 
-# t6=time.perf_counter()
+# # t6=time.perf_counter()
 
 # # #####################
 # # #Visualisation#
@@ -155,14 +156,17 @@ if not  os.path.isdir(folder_savings) :
 # #ETAPE 7 - Recherche de motifs / Apriori                          #
 # ###################################################################
 
+print("!!!!!!!!!")
+print(list_id,distances_clean)
+d=stack_to_one_hot_df(distances_clean, list_id)
+print(d.shape,d)
+print("###########")
 
-# d=pp.stack_to_one_hot_df(distances_clean, list_id)
-
-# motifs=pp.apriori_(d, 0.001, 4)
-
+motifs=apriori_(d, 0.1, 3)
+print("éééééééééé")
 # t8=time.perf_counter()
 
-# motifs=pp.get_maximum_connex_graph(motifs)
+motifs=get_maximum_connex_graph(motifs)
 
 
 # t9=time.perf_counter()
@@ -185,64 +189,64 @@ if not  os.path.isdir(folder_savings) :
 
 
 
-import itertools
-import pandas as pd 
-import numpy as np 
-dict_grid={"smooth_time": [ "20s","40s","60s","1800s"],
-           "smooth_function" : ["mean","max","median"], 
-           "threshold" : [-65,-70,-75]
-           }
+# import itertools
+# import pandas as pd 
+# import numpy as np 
+# dict_grid={"smooth_time": [ "20s","40s","60s","1800s"],
+#            "smooth_function" : ["mean","max","median"], 
+#            "threshold" : [-65,-70,-75]
+#            }
     
     
-df_total=pd.DataFrame()
+# df_total=pd.DataFrame()
 
 
-keys = dict_grid.keys()
-values = dict_grid.values()
+# keys = dict_grid.keys()
+# values = dict_grid.values()
 
-combinations = list(itertools.product(*values))
+# combinations = list(itertools.product(*values))
 
-# Organiser les combinaisons dans un format lisible
-all_combinations = [dict(zip(keys, combo)) for combo in combinations]
+# # Organiser les combinaisons dans un format lisible
+# all_combinations = [dict(zip(keys, combo)) for combo in combinations]
 
 
 
-c=0
-for comb in all_combinations : 
+# c=0
+# for comb in all_combinations : 
     
-    print(c,comb)
-    smooth_time=comb["smooth_time"]
-    smooth_function=comb[ "smooth_function" ]
-    threshold=comb["threshold"]
+#     print(c,comb)
+#     smooth_time=comb["smooth_time"]
+#     smooth_function=comb[ "smooth_function" ]
+#     threshold=comb["threshold"]
     
-    data=pp.concatenate_df(list_files,smooth_time=smooth_time,smooth_function=smooth_function)
-    list_id=list(pd.unique(data["accelero_id"]))
-    stack,list_timesteps=pp.create_stack(data,list_id,threshold=threshold)
+#     data=pp.concatenate_df(list_files,smooth_time=smooth_time,smooth_function=smooth_function)
+#     list_id=list(pd.unique(data["accelero_id"]))
+#     stack,list_timesteps=pp.create_stack(data,list_id,threshold=threshold)
     
-    start_time = pd.Timestamp('2024-10-16T15:00:00.000000000')
-    end_time = pd.Timestamp('2024-10-29T06:00:00.000000000')
+#     start_time = pd.Timestamp('2024-10-16T15:00:00.000000000')
+#     end_time = pd.Timestamp('2024-10-29T06:00:00.000000000')
 
 
 
-    distances_clean,list_timesteps=pp.crop_start_end_stack(stack=stack,
-                             list_timesteps = list_timesteps ,
-                             start = start_time,
-                             end = end_time)
+#     distances_clean,list_timesteps=pp.crop_start_end_stack(stack=stack,
+#                              list_timesteps = list_timesteps ,
+#                              start = start_time,
+#                              end = end_time)
 
         
         
-    d=pp.stack_to_one_hot_df(distances_clean, list_id)
+#     d=pp.stack_to_one_hot_df(distances_clean, list_id)
     
-    motifs=pp.apriori_(d, 0.0015, 3)
+#     motifs=pp.apriori_(d, 0.0015, 3)
     
-    motifs=pp.get_maximum_connex_graph(motifs)
+#     motifs=pp.get_maximum_connex_graph(motifs)
 
-    motifs["smooth_time"]=smooth_time
-    motifs["smooth_function"]=smooth_function
-    motifs["threshold"]=threshold
+#     motifs["smooth_time"]=smooth_time
+#     motifs["smooth_function"]=smooth_function
+#     motifs["threshold"]=threshold
     
     
-    df_total=pd.concat([df_total,motifs])
-    c+=1
+#     df_total=pd.concat([df_total,motifs])
+#     c+=1
     
 
