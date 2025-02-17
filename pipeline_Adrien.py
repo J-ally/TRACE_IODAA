@@ -16,7 +16,7 @@ import TRACE_module.preprocessing as pp
 import TRACE_module.visualisation as vi
 from TRACE_module.descriptive_analysis import from_stack_to_number_of_interaction_sequences,from_distance_to_sequences_vector, from_distances_to_sequences_stack,from_seq_to_average_interaction_time,from_seq_to_daily_interactions
 from TRACE_module.apriori_spade import stack_to_one_hot_df, get_maximum_connex_graph, apriori_
-
+from TRACE_module.DTGC import create_file_x_y_t as create_file_x_y_t
 import numpy as np
 import os
 import pandas as pd
@@ -121,11 +121,11 @@ distances_clean,list_timesteps=pp.crop_start_end_stack(stack=stack,
 t5b=time.perf_counter()
 # ##
 
-distances_clean=np.where(distances_clean==0,np.nan,distances_clean)
+#distances_clean=np.where(distances_clean==0,np.nan,distances_clean)
 
 
 # # ## Creation a a sequence matrix
-matrice_seq = from_distances_to_sequences_stack(distances_clean)
+#matrice_seq = from_distances_to_sequences_stack(distances_clean)
 
 # # ##Computing relevent number from the sequence matrix
 
@@ -162,7 +162,7 @@ d=stack_to_one_hot_df(distances_clean, list_id)
 print(d.shape,d)
 print("###########")
 
-motifs=apriori_(d, 0.1, 3)
+motifs=apriori_(d, 0.001, 3)
 print("éééééééééé")
 # t8=time.perf_counter()
 
@@ -248,5 +248,9 @@ motifs=get_maximum_connex_graph(motifs)
     
 #     df_total=pd.concat([df_total,motifs])
 #     c+=1
-    
+
+txt=create_file_x_y_t(distances_clean, list_timesteps)
+with open("cows.txt","w") as file : 
+    file.write(txt)
+
 
