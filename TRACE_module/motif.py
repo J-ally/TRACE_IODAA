@@ -5,6 +5,7 @@ from tqdm import tqdm
 from TRACE_module.utils import *
 import numpy as np
 from typing import List
+from collections import deque  # Pour l'algorithme BFS
 #############################################################################
                         # Types definition
 #############################################################################
@@ -156,6 +157,10 @@ class Motif:
     def __repr__(self):
         arcs = ", ".join(map(str, self._list_arc))
         return f"Motif( {arcs}, oriented : {self._oriented})"
+
+    def __str__(self):
+        arcs = ", ".join(map(str, self._list_arc))
+        return f"Motif( {arcs}, oriented : {self._oriented})"
     
     def __getitem__(self,key):
         return self._list_arc[key]
@@ -220,7 +225,80 @@ class Motif:
         for list_keys in sub_seq_keys : 
             list_sub_motif.append(Motif(*[self._list_arc[key] for key in list_keys], oriented= self._oriented)) # Instanciation des motifs à partir des arc
         return list_sub_motif
+
+    def connected_components(self):
+        """
+        Génère toutes les composantes connexes du motif.
         
+        Returns:
+            list[Motif]: Liste des composantes connexes sous forme de sous-motifs.
+        """
+        
+        # Construire la structure de voisinage
+        neighbors = {}
+        for arc in self._list_arc:
+            ind1, ind2 = arc.ind1, arc.ind2
+            if ind1 not in neighbors:
+                neighbors[ind1] = set()
+            if ind2 not in neighbors:
+                neighbors[ind2] = set()
+            neighbors[ind1].add(ind2)
+            if not self._oriented:  # Si le graphe n'est pas orienté, ajouter aussi dans l'autre sens
+                neighbors[ind2].add(ind1)
+
+        visited = set()
+        components = []
+
+        # Parcours pour identifier les composantes connexes
+        for node in neighbors:
+            if node not in visited:
+                # BFS pour explorer la composante connexe
+                queue = deque([node])
+                component_nodes = set()
+                component_arcs = set()
+
+                while queue:
+                    current = queue.popleft()
+                    if current not in visited:
+                        visited.add(current)
+                        component_nodes.add(current)
+                        for neighbor in neighbors[current]:
+                            queue.append(neighbor)
+
+                # Récupérer les arcs de cette composante
+                for arc in self._list_arc:
+                    if arc.ind1 in component_nodes and arc.ind2 in component_nodes:
+                        component_arcs.add(arc)
+
+                # Ajouter la nouvelle composante connexe sous forme de Motif
+                components.append(Motif(*component_arcs, oriented=self._oriented))
+
+        return components
+
+
+    def get_nodes(self):
+        """
+        Retourne la liste des nœuds présents dans le motif.
+
+        Returns:
+            list: Liste des nœuds uniques du motif.
+        """
+        nodes = set()
+        for arc in self._list_arc:
+            nodes.add(arc.ind1)
+            nodes.add(arc.ind2)
+        return list(nodes)
+
+        
+
+def interaction_matrix_to_motif(matrix, list_id): 
+    list_arc = []
+    nb_id = len(list_id)
+    for i in range(nb_id): 
+        for j in range(i,nb_id): 
+            if matrix[i,j] == 1 : 
+                list_arc.append(Arc(list_id[i], list_id[j]))
+    return Motif(*list_arc, oriented=False)
         
 
 def get_list_interactions(
