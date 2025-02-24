@@ -17,6 +17,7 @@ import TRACE_module.visualisation as vi
 from TRACE_module.descriptive_analysis import from_stack_to_number_of_interaction_sequences,from_distance_to_sequences_vector, from_distances_to_sequences_stack,from_seq_to_average_interaction_time,from_seq_to_daily_interactions
 from TRACE_module.apriori_spade import stack_to_one_hot_df, get_maximum_connex_graph, apriori_
 from TRACE_module.DTGC import create_file_x_y_t as create_file_x_y_t
+from TRACE_module.DTGC import create_file_nodeId_label as create_file_nodeId_label
 import numpy as np
 import os
 import pandas as pd
@@ -71,6 +72,7 @@ if not  os.path.isdir(folder_savings) :
     os.makedirs(folder_savings)
 
 data=pp.concatenate_df(list_files,smooth_time='20s')
+data=pp.remove_captor_(data,["366b"])
 
 # ##########################################
 # #ETAPE 3 -Transformation RSSI en distance#
@@ -154,19 +156,19 @@ t5b=time.perf_counter()
 # t7=time.perf_counter()
 # ###################################################################
 # #ETAPE 7 - Recherche de motifs / Apriori                          #
-# ###################################################################
+# # ###################################################################
 
-print("!!!!!!!!!")
-print(list_id,distances_clean)
-d=stack_to_one_hot_df(distances_clean, list_id)
-print(d.shape,d)
-print("###########")
+# print("!!!!!!!!!")
+# print(list_id,distances_clean)
+# d=stack_to_one_hot_df(distances_clean, list_id)
+# print(d.shape,d)
+# print("###########")
 
-motifs=apriori_(d, 0.001, 3)
-print("éééééééééé")
-# t8=time.perf_counter()
+# motifs=apriori_(d, 0.001, 3)
+# print("éééééééééé")
+# # t8=time.perf_counter()
 
-motifs=get_maximum_connex_graph(motifs)
+# motifs=get_maximum_connex_graph(motifs)
 
 
 # t9=time.perf_counter()
@@ -253,4 +255,11 @@ txt=create_file_x_y_t(distances_clean, list_timesteps)
 with open("cows.txt","w") as file : 
     file.write(txt)
 
+txt=create_file_nodeId_label(list_id)
+
+with open("cows_node_id_label.txt","w") as file : 
+    file.write(txt)
+    
+    
+    
 

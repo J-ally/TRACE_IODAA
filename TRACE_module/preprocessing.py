@@ -94,6 +94,29 @@ def concatenate_df(liste_files: list[str], smooth_time: str = "20s") -> pd.DataF
     return concatenated_df
 
 
+
+def remove_captor_(dataframe : pd.DataFrame, 
+                  
+                   id_to_remove : list[str]
+                   ) : 
+    
+    """
+    
+    """
+    
+    for captor in id_to_remove: 
+        dataframe=dataframe[(dataframe["accelero_id"] != captor) & (dataframe["id_sensor"] != captor) ]
+    return dataframe
+        
+    
+    
+    
+    
+    
+    
+    
+
+
 def transform_rssi_to_distance(
     dataframe: pd.DataFrame, type_evaluation: str = "log"
 ) -> pd.DataFrame:
@@ -187,3 +210,8 @@ def crop_start_end_stack(
     stack_cropped = stack[time_filter]
 
     return stack_cropped, filtered_timestamps
+
+
+
+
+                
