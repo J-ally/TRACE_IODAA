@@ -101,13 +101,17 @@ from torch.optim import SGD
 from torch.utils.data import DataLoader
 from torch.nn.functional import softmax
 import sys
-from HTNEDataSet import HTNEDataSet
+
 from torch.utils.data import Dataset
 
 FType = torch.FloatTensor
 LType = torch.LongTensor
+if torch.cuda.is_available(): 
+    DID = torch.cuda.current_device()
+    
 
-DID = 1
+
+    
 
 class HTNE_a:
     def __init__(self, file_path, emb_size=128, neg_size=10, hist_len=2, directed=False,
@@ -209,9 +213,9 @@ class HTNE_a:
             self.loss = 0.0
             loader = DataLoader(self.data, batch_size=self.batch,
                                 shuffle=True, num_workers=5)
-            if epoch % self.save_step == 0 and epoch != 0:
-                #torch.save(self, './model/dnrl-dblp-%d.bin' % epoch)
-                self.save_node_embeddings('./emb/cows_htne_attn_%d.emb' % (epoch))
+            # if epoch % self.save_step == 0 and epoch != 0:
+            #     #torch.save(self, './model/dnrl-dblp-%d.bin' % epoch)
+            #     self.save_node_embeddings('./emb/cows_htne_attn_%d.emb' % (epoch))
 
             for i_batch, sample_batched in enumerate(loader):
                 if i_batch % 100 == 0 and i_batch != 0:
@@ -242,7 +246,7 @@ class HTNE_a:
                              str(self.loss.cpu().numpy() / len(self.data)) + '\n')
             sys.stdout.flush()
 
-            self.save_node_embeddings('./emb/cows_htne_attn_%d.emb' % (self.epochs))
+            self.save_node_embeddings('./emb/cows_htne_attn_%d.emb' % (epoch))
 
     def save_node_embeddings(self, path):
         if torch.cuda.is_available():
