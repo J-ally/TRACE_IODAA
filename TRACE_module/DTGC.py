@@ -7,6 +7,8 @@ import pandas as pd
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 
+from torch.optim import Adam  # Add this import at the top
+
 
 def create_file_x_y_t(stack: np.ndarray,
                         list_timesteps:list[str]
@@ -128,15 +130,12 @@ import sys
 
 from torch.utils.data import Dataset
 
-FType = torch.FloatTensor
-LType = torch.LongTensor
-if torch.backends.mps.is_available(): 
-    DID = torch.device("mps")
-    
+FType = torch.float32
+LType = torch.int64
 
 class HTNE_a:
     def __init__(self, file_path, emb_size=128, neg_size=10, hist_len=2, directed=False,
-                 learning_rate=0.01, batch_size=1000, save_step=50, epoch_num=15):
+                    learning_rate=0.01, batch_size=1000, save_step=50, epoch_num=15):
         self.emb_size = emb_size
         self.neg_size = neg_size
         self.hist_len = hist_len
@@ -151,9 +150,8 @@ class HTNE_a:
 
         if torch.backends.mps.is_available():
             with torch.device("mps"):
-                self.node_emb = Variable(torch.from_numpy(np.random.uniform(
-                    -1. / np.sqrt(self.node_dim), 1. / np.sqrt(self.node_dim), (self.node_dim, emb_size))).type(
-                    FType).to("mps"), requires_grad=True)
+                self.node_emb = torch.nn.Parameter(torch.from_numpy(np.random.uniform(
+                    -1. / np.sqrt(self.node_dim), 1. / np.sqrt(self.node_dim), (self.node_dim, emb_size))).type(FType).to("mps"))
 
                 self.delta = Variable((torch.zeros(self.node_dim) + 1.).type(FType).to("mps"), requires_grad=True)
 
@@ -161,9 +159,8 @@ class HTNE_a:
                     -1. / np.sqrt(emb_size), 1. / np.sqrt(emb_size), (emb_size,))).type(
                     FType).to("mps")), requires_grad=True)
         else:
-            self.node_emb = Variable(torch.from_numpy(np.random.uniform(
-                -1. / np.sqrt(self.node_dim), 1. / np.sqrt(self.node_dim), (self.node_dim, emb_size))).type(
-                FType), requires_grad=True)
+            self.node_emb = torch.nn.Parameter(torch.from_numpy(np.random.uniform(
+                -1. / np.sqrt(self.node_dim), 1. / np.sqrt(self.node_dim), (self.node_dim, emb_size))).type(FType))
 
             self.delta = Variable((torch.zeros(self.node_dim) + 1.).type(FType), requires_grad=True)
 
@@ -171,7 +168,15 @@ class HTNE_a:
                 -1. / np.sqrt(emb_size), 1. / np.sqrt(emb_size), (emb_size,))).type(
                 FType)), requires_grad=True)
 
-        self.opt = SGD(lr=learning_rate, params=[self.node_emb, self.att_param, self.delta])
+        # self.opt = SGD(lr=learning_rate, params=[self.node_emb, self.att_param, self.delta])
+        # Replace SGD with Adam
+        self.opt = Adam(
+            params=[self.node_emb, self.att_param, self.delta],
+            lr=learning_rate,
+            betas=(0.9, 0.999),  # default Adam parameters
+            eps=1e-8,
+            weight_decay=1e-5  # L2 regularization
+        )
         self.loss = torch.FloatTensor()
 
     def forward(self, s_nodes, t_nodes, t_times, n_nodes, h_nodes, h_times, h_time_mask):
@@ -240,7 +245,7 @@ class HTNE_a:
             for i_batch, sample_batched in enumerate(loader):
                 if i_batch % 100 == 0 and i_batch != 0:
                     sys.stdout.write('\r' + str(i_batch * self.batch) + '\tloss: ' + str(
-                        self.loss.cpu().numpy() / (self.batch * i_batch)) + '\tdelta:' + str(
+                        self.loss.cpu().numpy() / (self.batch * i_batch)) + '\t\tdelta:' + str(
                         self.delta.mean().cpu().data.numpy()))
                     sys.stdout.flush()
 
@@ -262,8 +267,7 @@ class HTNE_a:
                                 sample_batched['history_times'].type(FType),
                                 sample_batched['history_masks'].type(FType))
 
-            sys.stdout.write('\repoch ' + str(epoch) + ': avg loss = ' +
-                                str(self.loss.cpu().numpy() / len(self.data)) + '\n')
+            sys.stdout.write(f'\repoch {epoch}: avg loss = {self.loss.cpu().numpy() / len(self.data):.6f}    delta = {self.delta.mean().cpu().data.numpy():.6f}\n')
             sys.stdout.flush()
             self.save_node_embeddings('./emb/cows_htne_attn_%d.emb' % (epoch))
 

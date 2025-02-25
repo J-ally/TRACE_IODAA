@@ -19,7 +19,8 @@ if __name__ == "__main__":
         neg_size=10,
         hist_len=2,
         directed=False,
-        epoch_num=50
+        epoch_num=150,
+        learning_rate=0.001,
     )
 
     # Train the model
