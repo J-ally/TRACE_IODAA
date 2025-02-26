@@ -9,15 +9,12 @@ sys.path.insert(0,'TRACE_module' ) # insert path to be able to import file after
 from DTGC import HTNEDataSet, HTNE_a
 
 if __name__ == "__main__":
-    # Load the data
-    
-    print(sys.path)
-    
+
     model = HTNE_a(
         file_path="HTNE_try/cows.txt", 
         emb_size=128,
         neg_size=10,
-        hist_len=2,
+        hist_len=4,
         directed=False,
         epoch_num=150,
         learning_rate=0.001,

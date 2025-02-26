@@ -267,9 +267,9 @@ class HTNE_a:
                                 sample_batched['history_times'].type(FType),
                                 sample_batched['history_masks'].type(FType))
 
-            sys.stdout.write(f'\repoch {epoch}: avg loss = {self.loss.cpu().numpy() / len(self.data):.6f}    delta = {self.delta.mean().cpu().data.numpy():.6f}\n')
-            sys.stdout.flush()
-            self.save_node_embeddings('./emb/cows_htne_attn_%d.emb' % (epoch))
+            print(f'\repoch {epoch}: avg loss = {self.loss.cpu().numpy() / len(self.data):.6f}    delta = {self.delta.mean().cpu().data.numpy():.6f}\n')
+            if epoch % 5 == 0:
+                self.save_node_embeddings('./emb/cows_htne_attn_%d.emb' % (epoch))
 
 
     def save_node_embeddings(self, path):
